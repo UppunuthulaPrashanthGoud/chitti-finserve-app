@@ -1,0 +1,18 @@
+{
+  "title": "Apply for Loan",
+  "fields": [
+    {"id": "full_name", "label": "Full Name", "type": "text", "required": true},
+    {"id": "mobile", "label": "Mobile Number", "type": "text", "required": true, "autofill": true},
+    {"id": "email", "label": "Email ID", "type": "text", "required": false},
+    {"id": "loan_amount", "label": "Loan Amount", "type": "number", "required": true},
+    {"id": "purpose", "label": "Purpose of Loan", "type": "dropdown", "required": true, "options": ["Personal Loan", "Business Loan", "OD", "Mortgage", "Home Loan", "Car Loan", "Insurance", "Credit Card", "Doctor Loan", "Education Loan", "Others"]},
+    {"id": "income", "label": "Monthly Income", "type": "number", "required": true},
+    {"id": "occupation", "label": "Occupation", "type": "text", "required": true},
+    {"id": "aadhar", "label": "Upload Aadhar", "type": "file", "required": false},
+    {"id": "pan", "label": "Upload PAN", "type": "file", "required": false},
+    {"id": "bank", "label": "Select Bank", "type": "dropdown", "required": true, "options": ["HDFC", "ICICI", "SBI", "Axis", "Kotak", "Other"]}
+  ],
+  "submitButton": "Submit",
+  "thankYouMessage": "Thank you! Your lead has been submitted.",
+  "errorMessage": "Submission failed. Please try again."
+}

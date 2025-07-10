@@ -1,0 +1,15 @@
+{
+  "categories": [
+    { "id": "personal", "name": "Personal Loan", "icon": "assets/images/personal.jpg" },
+    { "id": "business", "name": "Business Loan", "icon": "assets/images/business.jpg" },
+    { "id": "od", "name": "OD", "icon": "assets/images/od.jpg" },
+    { "id": "mortgage", "name": "Mortgage", "icon": "assets/images/mortgage.jpg" },
+    { "id": "home", "name": "Home Loan", "icon": "assets/images/home.jpg" },
+    { "id": "car", "name": "Car Loan", "icon": "assets/images/car.jpg" },
+    { "id": "insurance", "name": "Insurance", "icon": "assets/images/insurance.jpg" },
+    { "id": "credit_card", "name": "Credit Card", "icon": "assets/images/credit_card.jpg" },
+    { "id": "doctor", "name": "Doctor Loan", "icon": "assets/images/doctor.jpg" },
+    { "id": "education", "name": "Education Loan", "icon": "assets/images/education.jpg" },
+    { "id": "others", "name": "Others", "icon": "assets/images/others.jpg" }
+  ]
+}

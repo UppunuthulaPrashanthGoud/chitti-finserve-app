@@ -1,0 +1,11 @@
+{
+  "title": "Login to Continue",
+  "mobileLabel": "Mobile Number",
+  "otpLabel": "Enter OTP",
+  "getOtpButton": "Get OTP",
+  "verifyOtpButton": "Verify OTP",
+  "autoLogin": true,
+  "otpLength": 4,
+  "successMessage": "Login successful!",
+  "errorMessage": "Invalid OTP. Please try again."
+}

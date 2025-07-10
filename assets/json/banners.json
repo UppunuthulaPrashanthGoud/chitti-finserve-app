@@ -1,0 +1,36 @@
+{
+  "banners": [
+    {
+      "id": "banner1",
+      "title": "Personal Loans",
+      "subtitle": "Quick approval up to ₹25 Lakhs",
+      "image": "assets/images/personal.jpg",
+      "color": "#005DFF",
+      "action": "Apply Now"
+    },
+    {
+      "id": "banner2", 
+      "title": "Business Loans",
+      "subtitle": "Grow your business with flexible financing",
+      "image": "assets/images/business.jpg",
+      "color": "#FF6B35",
+      "action": "Learn More"
+    },
+    {
+      "id": "banner3",
+      "title": "Home Loans",
+      "subtitle": "Make your dream home a reality",
+      "image": "assets/images/home.jpg", 
+      "color": "#4CAF50",
+      "action": "Calculate EMI"
+    },
+    {
+      "id": "banner4",
+      "title": "Car Loans",
+      "subtitle": "Drive your dream car today",
+      "image": "assets/images/car.jpg",
+      "color": "#9C27B0",
+      "action": "Get Quote"
+    }
+  ]
+} 
