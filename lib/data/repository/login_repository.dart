@@ -5,11 +5,36 @@ import '../model/login_model.dart';
 class LoginRepository {
   Future<LoginModel> fetchLoginConfig() async {
     try {
+
+
       final response = await NetworkService.get('/configuration/public');
       final jsonMap = NetworkService.parseResponse(response);
-      return LoginModel.fromJson(jsonMap['data']);
+      
+      // Validate response structure
+      if (jsonMap['data'] == null) {
+        throw Exception('Invalid response format from server');
+      }
+      
+      // The login configuration is nested inside data.login
+      final loginData = jsonMap['data']['login'];
+      if (loginData == null) {
+        throw Exception('Login configuration not found in server response');
+      }
+      
+      try {
+        final loginModel = LoginModel.fromJson(loginData);
+        return loginModel;
+      } catch (e) {
+        rethrow;
+      }
     } catch (e) {
-      throw Exception('Failed to load login config: $e');
+      if (e.toString().contains('SocketException') || e.toString().contains('HttpException')) {
+        throw Exception('Network error: Unable to connect to the server. Please check your internet connection.');
+      } else if (e.toString().contains('timeout')) {
+        throw Exception('Request timeout: The server is taking too long to respond. Please try again.');
+      } else {
+        throw Exception('Failed to load login config: $e');
+      }
     }
   }
 

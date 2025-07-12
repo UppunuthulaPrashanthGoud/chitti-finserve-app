@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'core/app_theme.dart';
+import 'core/app_config.dart';
 import 'presentation/splash/splash_screen.dart';
 import 'presentation/login/login_screen.dart';
 import 'presentation/home/home_screen.dart';
@@ -11,6 +12,9 @@ import 'presentation/profile/profile_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() {
+  // Print debug information
+  AppConfig.printDebugInfo();
+  
   runApp(const ProviderScope(child: ChittiFinserveApp()));
 }
 

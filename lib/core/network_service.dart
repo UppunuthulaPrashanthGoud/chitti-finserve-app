@@ -1,13 +1,12 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
+import 'app_config.dart';
 
 class NetworkService {
-  static const String baseUrl = 'http://localhost:5000/api';
-  // For production: 'https://your-domain.com/api'
-  
-  static const Duration timeout = Duration(seconds: 30);
-  static const int maxRetries = 3;
+  static String get baseUrl => AppConfig.apiBaseUrl;
+  static Duration get timeout => AppConfig.apiTimeout;
+  static int get maxRetries => AppConfig.maxRetries;
 
   static Future<http.Response> get(
     String endpoint, {
@@ -92,7 +91,15 @@ class NetworkService {
     
     while (retryCount < maxRetries) {
       try {
+        if (AppConfig.enableLogging) {
+          print('🌐 NetworkService: Making request (attempt ${retryCount + 1})');
+        }
+        
         final response = await request().timeout(timeout);
+        
+        if (AppConfig.enableLogging) {
+          print('✅ NetworkService: Response received - Status: ${response.statusCode}');
+        }
         
         // If successful, return the response
         if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -101,12 +108,18 @@ class NetworkService {
         
         // If it's a client error (4xx), don't retry
         if (response.statusCode >= 400 && response.statusCode < 500) {
+          if (AppConfig.enableLogging) {
+            print('❌ NetworkService: Client error - Status: ${response.statusCode}');
+          }
           return response;
         }
         
         // If it's a server error (5xx), retry
         if (response.statusCode >= 500) {
           retryCount++;
+          if (AppConfig.enableLogging) {
+            print('🔄 NetworkService: Server error, retrying... (${retryCount}/${maxRetries})');
+          }
           if (retryCount < maxRetries) {
             await Future.delayed(Duration(seconds: retryCount * 2));
             continue;
@@ -117,8 +130,13 @@ class NetworkService {
       } catch (e) {
         retryCount++;
         
+        if (AppConfig.enableLogging) {
+          print('❌ NetworkService: Error occurred - $e');
+          print('🔄 NetworkService: Retrying... (${retryCount}/${maxRetries})');
+        }
+        
         // If it's a network error, retry
-        if (e is SocketException || e is HttpException) {
+        if (e.toString().contains('SocketException') || e.toString().contains('HttpException')) {
           if (retryCount < maxRetries) {
             await Future.delayed(Duration(seconds: retryCount * 2));
             continue;
@@ -153,6 +171,8 @@ class NetworkService {
       );
     }
   }
+
+
 }
 
 class ApiException implements Exception {

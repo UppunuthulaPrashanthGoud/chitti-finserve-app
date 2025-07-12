@@ -1,12 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/repository/login_repository.dart';
 import '../../data/repository/user_repository.dart';
+import '../../data/repository/config_repository.dart';
 import '../../data/model/login_model.dart';
 import '../user/user_provider.dart';
 
 final loginConfigProvider = FutureProvider.autoDispose<LoginModel>((ref) async {
   final repo = LoginRepository();
   return repo.fetchLoginConfig();
+});
+
+final appConfigProvider = FutureProvider.autoDispose<AppConfig>((ref) async {
+  final repo = ConfigRepository();
+  return repo.fetchAppConfig();
 });
 
 final loginRepositoryProvider = Provider<LoginRepository>((ref) {
