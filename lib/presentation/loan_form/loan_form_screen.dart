@@ -1,15 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:animated_text_kit/animated_text_kit.dart';
 import 'loan_form_provider.dart';
 import '../../data/model/loan_form_model.dart';
+import '../../data/model/category_model.dart';
 import '../profile/profile_provider.dart';
+import '../user/user_provider.dart';
 import '../legal/terms_conditions_screen.dart';
 import '../legal/privacy_policy_screen.dart';
+import '../applied_loans/applied_loans_screen.dart';
+import 'dart:convert'; // Added for json.decode
+import 'package:http/http.dart' as http; // Added for http.MultipartRequest
+import '../../core/network_service.dart'; // Added for NetworkService
+import '../../core/validation_helper.dart'; // Added for ValidationHelper
+import 'success_screen.dart';
+import '../../core/app_config.dart';
 
 class LoanFormScreen extends ConsumerStatefulWidget {
   final String? prefillMobile;
   final String? prefillLoanType;
-  const LoanFormScreen({Key? key, this.prefillMobile, this.prefillLoanType}) : super(key: key);
+  final CategoryModel? selectedCategory;
+  const LoanFormScreen({
+    Key? key, 
+    this.prefillMobile, 
+    this.prefillLoanType,
+    this.selectedCategory,
+  }) : super(key: key);
 
   @override
   ConsumerState<LoanFormScreen> createState() => _LoanFormScreenState();
@@ -19,10 +35,13 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
   final Map<String, TextEditingController> _controllers = {};
   final Map<String, String?> _dropdownValues = {};
   final Map<String, String?> _filePaths = {};
+  String? aadharDocPath;
+  String? panDocPath;
   bool _loading = false;
   String? _error;
   bool _submitted = false;
   bool _acceptedTerms = false;
+  bool _hasPrefilled = false; // Add flag to prevent multiple prefill calls
 
   @override
   void initState() {
@@ -30,6 +49,7 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
     _error = null;
     _loading = false;
     _submitted = false;
+    _hasPrefilled = false;
   }
 
   @override
@@ -44,45 +64,79 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
     final profileAsync = ref.read(profileProvider);
     profileAsync.whenData((profile) {
       if (profile != null) {
-        // Auto-fill from profile data
+        // Auto-fill from profile data using correct field names
         if (_controllers.containsKey('full_name') && _controllers['full_name']!.text.isEmpty) {
-          _controllers['full_name']!.text = profile.fullName;
+          _controllers['full_name']!.text = profile.name ?? '';
         }
         if (_controllers.containsKey('mobile') && _controllers['mobile']!.text.isEmpty) {
-          _controllers['mobile']!.text = profile.mobileNumber;
+          _controllers['mobile']!.text = profile.phone ?? '';
         }
         if (_controllers.containsKey('email') && _controllers['email']!.text.isEmpty) {
-          _controllers['email']!.text = profile.emailId ?? '';
+          _controllers['email']!.text = profile.email ?? '';
         }
-        if (_controllers.containsKey('loan_amount') && _controllers['loan_amount']!.text.isEmpty) {
-          _controllers['loan_amount']!.text = profile.loanAmount ?? '';
+        if (_controllers.containsKey('aadhar_number') && _controllers['aadhar_number']!.text.isEmpty) {
+          _controllers['aadhar_number']!.text = profile.aadharNumber ?? '';
         }
-        if (_controllers.containsKey('purpose') && _dropdownValues['purpose'] == null) {
+        if (_controllers.containsKey('pan_number') && _controllers['pan_number']!.text.isEmpty) {
+          _controllers['pan_number']!.text = profile.panNumber ?? '';
+        }
+        if (_controllers.containsKey('aadhar_upload') && _dropdownValues['aadhar_upload'] == null) {
           setState(() {
-            _dropdownValues['purpose'] = profile.purposeOfLoan;
+            _dropdownValues['aadhar_upload'] = profile.aadharUpload;
           });
         }
-        if (_controllers.containsKey('income') && _controllers['income']!.text.isEmpty) {
-          _controllers['income']!.text = profile.monthlyIncome ?? '';
-        }
-        if (_controllers.containsKey('occupation') && _controllers['occupation']!.text.isEmpty) {
-          _controllers['occupation']!.text = profile.occupation ?? '';
-        }
-        if (_controllers.containsKey('aadhar') && _dropdownValues['aadhar'] == null) {
+        if (_controllers.containsKey('pan_upload') && _dropdownValues['pan_upload'] == null) {
           setState(() {
-            _dropdownValues['aadhar'] = profile.aadharUpload;
-          });
-        }
-        if (_controllers.containsKey('pan') && _dropdownValues['pan'] == null) {
-          setState(() {
-            _dropdownValues['pan'] = profile.panUpload;
+            _dropdownValues['pan_upload'] = profile.panUpload;
           });
         }
       }
     });
   }
 
+  void _prefillFromBackendUser() async {
+    if (_hasPrefilled) return; // Prevent multiple calls
+    
+    try {
+      final userData = await ref.read(loanFormRepositoryProvider).getCurrentUser();
+      if (userData != null) {
+        // Auto-fill from backend user data
+        if (_controllers.containsKey('full_name') && _controllers['full_name']!.text.isEmpty) {
+          _controllers['full_name']!.text = userData['name'] ?? '';
+        }
+        if (_controllers.containsKey('mobile') && _controllers['mobile']!.text.isEmpty) {
+          _controllers['mobile']!.text = userData['phone'] ?? '';
+        }
+        if (_controllers.containsKey('email') && _controllers['email']!.text.isEmpty) {
+          _controllers['email']!.text = userData['email'] ?? '';
+        }
+        if (_controllers.containsKey('aadhar_number') && _controllers['aadhar_number']!.text.isEmpty) {
+          _controllers['aadhar_number']!.text = userData['aadharNumber'] ?? '';
+        }
+        if (_controllers.containsKey('pan_number') && _controllers['pan_number']!.text.isEmpty) {
+          _controllers['pan_number']!.text = userData['panNumber'] ?? '';
+        }
+        if (_controllers.containsKey('aadhar_upload') && _dropdownValues['aadhar_upload'] == null) {
+          setState(() {
+            _dropdownValues['aadhar_upload'] = userData['aadharUpload'];
+          });
+        }
+        if (_controllers.containsKey('pan_upload') && _dropdownValues['pan_upload'] == null) {
+          setState(() {
+            _dropdownValues['pan_upload'] = userData['panUpload'];
+          });
+        }
+        _hasPrefilled = true; // Mark as prefilled
+      }
+    } catch (e) {
+      // If backend fails, fall back to profile data
+      _prefillFromProfile();
+    }
+  }
+
   void _prefillFromWidget() {
+    if (_hasPrefilled) return; // Prevent multiple calls
+    
     final mobile = widget.prefillMobile;
     final loanType = widget.prefillLoanType;
     
@@ -103,37 +157,255 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
     }
   }
 
+  Future<String?> _uploadDocument(String fieldId, String? filePath) async {
+    if (filePath == null || filePath.isEmpty) return null;
+    final uri = Uri.parse('${NetworkService.baseUrl}/upload/document');
+    final request = http.MultipartRequest('POST', uri);
+    
+    // Determine the correct field name based on fieldId
+    String fieldName = 'document';
+    if (fieldId == 'aadharUpload') {
+      fieldName = 'aadharCard';
+    } else if (fieldId == 'panUpload') {
+      fieldName = 'panCard';
+    }
+    
+    request.files.add(await http.MultipartFile.fromPath(fieldName, filePath));
+    // Add auth token if needed
+    final token = await ref.read(userRepositoryProvider).getAuthToken();
+    if (token != null) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+    final response = await request.send();
+    if (response.statusCode == 200) {
+      final respStr = await response.stream.bytesToString();
+      final respJson = json.decode(respStr);
+      return respJson['data']?['path'];
+    }
+    return null;
+  }
+
   void _submit(LoanFormModel config) async {
     // Check if terms and conditions are accepted
     if (!_acceptedTerms) {
-      setState(() {
-        _error = 'Please accept the Terms & Conditions to continue';
-      });
+      ValidationHelper.showValidationError(context, 'Please accept the Terms & Conditions to continue');
       return;
     }
 
     setState(() {
       _loading = true;
-      _error = null;
     });
-    await Future.delayed(const Duration(seconds: 1));
-    bool hasError = false;
-    for (final field in config.fields) {
-      if (field.required &&
-          ((field.type == 'dropdown' && (_dropdownValues[field.id] == null || _dropdownValues[field.id]!.isEmpty)) ||
-           (field.type != 'dropdown' && (_controllers[field.id]?.text.isEmpty ?? true)))) {
-        hasError = true;
-        break;
+
+    try {
+      // Build form data based on actual field IDs from configuration
+      final Map<String, dynamic> formData = {};
+      
+      // Handle selected category first
+      if (widget.selectedCategory != null) {
+        formData['category'] = widget.selectedCategory!.name;
+        formData['loanType'] = widget.selectedCategory!.name.toLowerCase().replaceAll(' ', '-');
       }
-    }
-    setState(() {
-      _loading = false;
-      if (hasError) {
-        _error = config.errorMessage;
+      
+      // Map fields based on their IDs from the configuration
+      for (final field in config.fields ?? []) {
+        final fieldId = field.id ?? '';
+        
+        // Skip category field if we have a selected category
+        if (fieldId == 'category' && widget.selectedCategory != null) {
+          continue;
+        }
+        
+        if (field.type == 'dropdown') {
+          final value = _dropdownValues[fieldId];
+          if (value != null && value.isNotEmpty) {
+            // Map dropdown values to backend field names
+            switch (fieldId) {
+              case 'category':
+                // Use the category name directly - the repository will map it to ID
+                formData['category'] = value;
+                // Also set loanType based on category name
+                formData['loanType'] = value.toLowerCase().replaceAll(' ', '-');
+                break;
+              case 'purpose':
+                formData['loanPurpose'] = value;
+                break;
+              case 'employmentType':
+                formData['employmentType'] = value;
+                break;
+              default:
+                formData[fieldId] = value;
+            }
+          }
+        } else {
+          final controller = _controllers[fieldId];
+          if (controller != null && controller.text.isNotEmpty) {
+            // Map text field values to backend field names
+            switch (fieldId) {
+              case 'loanAmount':
+                formData['loanAmount'] = double.tryParse(controller.text) ?? 0;
+                break;
+              case 'monthlyIncome':
+                formData['monthlyIncome'] = double.tryParse(controller.text) ?? 0;
+                break;
+              case 'aadharNumber':
+                formData['aadharNumber'] = controller.text;
+                break;
+              case 'panNumber':
+                formData['panNumber'] = controller.text;
+                break;
+              case 'street':
+                if (!formData.containsKey('address')) formData['address'] = {};
+                (formData['address'] as Map)['street'] = controller.text;
+                break;
+              case 'city':
+                if (!formData.containsKey('address')) formData['address'] = {};
+                (formData['address'] as Map)['city'] = controller.text;
+                break;
+              case 'state':
+                if (!formData.containsKey('address')) formData['address'] = {};
+                (formData['address'] as Map)['state'] = controller.text;
+                break;
+              case 'pincode':
+                if (!formData.containsKey('address')) formData['address'] = {};
+                (formData['address'] as Map)['pincode'] = controller.text;
+                break;
+              default:
+                formData[fieldId] = controller.text;
+            }
+          }
+        }
+      }
+      
+      // Add documents if uploaded
+      if (aadharDocPath != null || panDocPath != null) {
+        formData['documents'] = {};
+        if (aadharDocPath != null) {
+          (formData['documents'] as Map)['aadharCard'] = aadharDocPath;
+        }
+        if (panDocPath != null) {
+          (formData['documents'] as Map)['panCard'] = panDocPath;
+        }
+      }
+      
+      // Debug: Print final form data
+      print('🔧 Mobile App Debug: Final form data:');
+      print('${JsonEncoder.withIndent('  ').convert(formData)}');
+      
+      // Validate required fields for backend
+      final List<String> missingFields = [];
+      
+      if (!formData.containsKey('category') || formData['category'] == null) {
+        missingFields.add('category');
+      }
+      // loanType is automatically generated from category, so no need to validate separately
+      if (!formData.containsKey('loanAmount') || formData['loanAmount'] == 0) {
+        missingFields.add('loanAmount');
+      }
+      if (!formData.containsKey('loanPurpose') || formData['loanPurpose'] == null) {
+        missingFields.add('loanPurpose');
+      }
+      if (!formData.containsKey('monthlyIncome') || formData['monthlyIncome'] == 0) {
+        missingFields.add('monthlyIncome');
+      }
+      if (!formData.containsKey('employmentType') || formData['employmentType'] == null) {
+        missingFields.add('employmentType');
+      }
+      
+      // Check address fields
+      final address = formData['address'] as Map?;
+      if (address == null || address.isEmpty) {
+        missingFields.add('address');
       } else {
-        _submitted = true;
+        if (!address.containsKey('street') || address['street'] == null) {
+          missingFields.add('address.street');
+        }
+        if (!address.containsKey('city') || address['city'] == null) {
+          missingFields.add('address.city');
+        }
+        if (!address.containsKey('state') || address['state'] == null) {
+          missingFields.add('address.state');
+        }
+        if (!address.containsKey('pincode') || address['pincode'] == null) {
+          missingFields.add('address.pincode');
+        }
       }
-    });
+      
+      if (missingFields.isNotEmpty) {
+        print('❌ Mobile App Debug: Missing required fields: $missingFields');
+        setState(() {
+          _loading = false;
+        });
+        ValidationHelper.showValidationError(context, 'Please fill in all required fields: ${missingFields.join(', ')}');
+        return;
+      }
+
+      // Check authentication first
+      final token = await ref.read(userRepositoryProvider).getAuthToken();
+      if (token == null) {
+        setState(() {
+          _loading = false;
+        });
+        ValidationHelper.showValidationError(context, 'Please login to submit an application');
+        return;
+      }
+      
+      print('🔧 Mobile App Debug: User is authenticated, proceeding with submission');
+      
+      // Submit the application
+      await ref.read(loanFormRepositoryProvider).submitLoanApplication(formData);
+      
+      setState(() {
+        _loading = false;
+        _submitted = true;
+      });
+      
+    } catch (e) {
+      String errorMessage = e.toString();
+      
+      // Parse validation errors from backend
+      if (errorMessage.contains('Validation error') || errorMessage.contains('400') || errorMessage.contains('Validation failed')) {
+        try {
+          // Check if the error message contains JSON data
+          if (errorMessage.contains('{"success":false}') || errorMessage.contains('"errors"')) {
+            // Extract JSON from the error message
+            final jsonStart = errorMessage.indexOf('{');
+            final jsonEnd = errorMessage.lastIndexOf('}') + 1;
+            if (jsonStart != -1 && jsonEnd > jsonStart) {
+              final jsonString = errorMessage.substring(jsonStart, jsonEnd);
+              final errorData = json.decode(jsonString);
+              
+              if (errorData is Map && errorData['errors'] != null) {
+                final errors = errorData['errors'] as List;
+                final errorMsgs = errors.map((error) => error['msg'] ?? 'Validation error').toList();
+                if (errorMsgs.isNotEmpty) {
+                  errorMessage = errorMsgs.join('\n');
+                }
+              }
+            }
+          }
+        } catch (_) {
+          // If JSON parsing fails, use a generic message
+          errorMessage = 'Please check all required fields and try again.';
+        }
+      } else if (errorMessage.contains('already have') && errorMessage.contains('loan application')) {
+        errorMessage = 'You already have an application for this loan type. You can only apply for one loan of each type at a time.';
+      } else if (errorMessage.contains('Network error')) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      } else if (errorMessage.contains('timeout')) {
+        errorMessage = 'Request timeout. Please try again.';
+      } else if (errorMessage.contains('Authentication failed')) {
+        errorMessage = 'Please login again to submit your application.';
+      } else if (errorMessage.contains('Server error')) {
+        errorMessage = 'Server error. Please try again later.';
+      }
+      
+      setState(() {
+        _loading = false;
+      });
+      
+      // Show error using ValidationHelper
+      ValidationHelper.showValidationError(context, errorMessage);
+    }
   }
 
   @override
@@ -142,78 +414,18 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
     return Scaffold(
       body: loanFormAsync.when(
         data: (config) {
-          // Prefill logic after config loads
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _prefillFromProfile();
-            _prefillFromWidget();
-          });
+          // Prefill logic after config loads - only once
+          if (!_hasPrefilled) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!_hasPrefilled) {
+                _prefillFromBackendUser();
+                _prefillFromWidget();
+              }
+            });
+          }
           if (_submitted) {
-            return Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    const Color(0xFF005DFF),
-                    const Color(0xFF5BB5FF),
-                  ],
-                ),
-              ),
-              child: Center(
-                child: Container(
-                  margin: const EdgeInsets.all(24),
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        child: const Icon(
-                          Icons.check_circle,
-                          color: Colors.green,
-                          size: 48,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Application Submitted!',
-                        style: TextStyle(
-                          color: const Color(0xFF005DFF),
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Montserrat',
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                config.thankYouMessage,
-                        style: TextStyle(
-                          color: Colors.grey[700],
-                          fontSize: 16,
-                          fontFamily: 'Montserrat',
-                        ),
-                textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            return SuccessScreen(
+              thankYouMessage: config.thankYouMessage ?? 'Thank you for your application!',
             );
           }
           return Container(
@@ -230,10 +442,11 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
             child: SafeArea(
               child: Column(
                 children: [
-                  // Compact Header
+                  // Header with selected category
                   Container(
                     padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Back button
                         Row(
@@ -253,15 +466,9 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        // Compact header content
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white.withOpacity(0.2)),
-                          ),
-                          child: Row(
+                        // Category icon and name in header
+                        if (widget.selectedCategory != null)
+                          Row(
                             children: [
                               Container(
                                 padding: const EdgeInsets.all(8),
@@ -269,39 +476,50 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
                                   color: Colors.white.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(
-                                  Icons.rocket_launch,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
+                                child: widget.selectedCategory!.icon != null && widget.selectedCategory!.icon!.isNotEmpty
+                                    ? Image.network(
+                                        widget.selectedCategory!.icon!.startsWith('http')
+                                            ? widget.selectedCategory!.icon!
+                                            : widget.selectedCategory!.icon!.startsWith('uploads/')
+                                                ? AppConfig.apiBaseUrl.replaceFirst('/api', '') + '/' + widget.selectedCategory!.icon!
+                                                : AppConfig.apiBaseUrl.replaceFirst('/api', '') + '/uploads/' + widget.selectedCategory!.icon!,
+                                        width: 36,
+                                        height: 36,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) =>
+                                            Icon(Icons.category, size: 36, color: const Color(0xFF005DFF)),
+                                      )
+                                    : Icon(Icons.category, size: 36, color: const Color(0xFF005DFF)),
                               ),
                               const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    config.title,
-                                      style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontFamily: 'Montserrat',
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Complete your application',
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.9),
-                                        fontSize: 13,
-                          fontFamily: 'Montserrat',
-                                      ),
-                                    ),
-                                  ],
+                              Text(
+                                widget.selectedCategory!.name,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Montserrat',
                                 ),
                               ),
                             ],
+                          ),
+                        if (widget.selectedCategory == null)
+                          Text(
+                            config.title ?? 'Loan Application',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontFamily: 'Montserrat',
+                            ),
+                          ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Complete your application',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 13,
+                            fontFamily: 'Montserrat',
                           ),
                         ),
                       ],
@@ -328,30 +546,7 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
                           child: Column(
                             children: [
                               // Form fields with minimal spacing
-                  ..._buildFormFields(config.fields),
-                              
-                  if (_error != null)
-                                Container(
-                                  margin: const EdgeInsets.only(top: 16, bottom: 8),
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red[50],
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.red[200]!),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.error_outline, color: Colors.red[600], size: 20),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          _error!,
-                                          style: TextStyle(color: Colors.red[700], fontSize: 14),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                              ..._buildFormFields(config.fields ?? []),
                               
                               const SizedBox(height: 24),
                               
@@ -549,7 +744,7 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
                                                 ),
                                                 const SizedBox(width: 12),
                                                 Text(
-                                                  config.submitButton,
+                                                  config.submitButton ?? 'Submit Application',
                                                   style: const TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 18,
@@ -660,20 +855,31 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
   }
 
   List<Widget> _buildFormFields(List<LoanFormField> fields) {
-    return fields.map((field) {
-      if (!_controllers.containsKey(field.id)) {
-        _controllers[field.id] = TextEditingController();
+    return fields.where((field) {
+      // If a category is selected, skip the category field entirely
+      if (field.id == 'category' && widget.selectedCategory != null) {
+        return false;
       }
+      return true;
+    }).map((field) {
+      final fieldId = field.id ?? 'unknown_field';
+      if (!_controllers.containsKey(fieldId)) {
+        _controllers[fieldId] = TextEditingController();
+      }
+      
       switch (field.type) {
         case 'dropdown':
-          final currentValue = _dropdownValues[field.id];
+          final currentValue = _dropdownValues[fieldId];
           final options = field.options ?? [];
           // Ensure the current value exists in options, otherwise set to null
-          final validValue = options.contains(currentValue) ? currentValue : null;
+          final validValue = options.any((opt) {
+            final optionValue = opt is String ? opt : opt.toString();
+            return optionValue == currentValue;
+          }) ? currentValue : null;
           if (validValue != currentValue) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               setState(() {
-                _dropdownValues[field.id] = validValue;
+                _dropdownValues[fieldId] = validValue;
               });
             });
           }
@@ -694,10 +900,17 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
             ),
             child: DropdownButtonFormField<String>(
               value: validValue,
-              items: options.map((opt) => DropdownMenuItem(value: opt, child: Text(opt))).toList(),
-              onChanged: (val) => setState(() => _dropdownValues[field.id] = val),
+              items: options.map((opt) {
+                // Handle both string and dynamic options
+                final optionValue = opt is String ? opt : opt.toString();
+                return DropdownMenuItem<String>(
+                  value: optionValue,
+                  child: Text(optionValue),
+                );
+              }).toList(),
+              onChanged: (val) => setState(() => _dropdownValues[fieldId] = val),
               decoration: InputDecoration(
-                labelText: field.label,
+                labelText: field.label ?? 'Field',
                 labelStyle: TextStyle(
                   color: const Color(0xFF005DFF),
                   fontWeight: FontWeight.w500,
@@ -719,7 +932,7 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
                 filled: true,
                 fillColor: Colors.grey[50],
               ),
-              validator: (val) => field.required && (val == null || val.isEmpty)
+              validator: (val) => field.required == true && (val == null || val.isEmpty)
                   ? 'Required'
                   : null,
             ),
@@ -772,7 +985,7 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              field.label + (field.required ? ' *' : ''),
+                              (field.label ?? 'Field') + (field.required == true ? ' *' : ''),
                               style: TextStyle(
                                 color: const Color(0xFF005DFF),
                                 fontWeight: FontWeight.w500,
@@ -819,10 +1032,10 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
               ],
             ),
             child: TextField(
-              controller: _controllers[field.id],
+              controller: _controllers[fieldId],
               keyboardType: field.type == 'number' ? TextInputType.number : TextInputType.text,
               decoration: InputDecoration(
-                labelText: field.label + (field.required ? ' *' : ''),
+                labelText: (field.label ?? 'Field') + (field.required == true ? ' *' : ''),
                 labelStyle: TextStyle(
                   color: const Color(0xFF005DFF),
                   fontWeight: FontWeight.w500,
@@ -850,3 +1063,4 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
     }).toList();
   }
 }
+

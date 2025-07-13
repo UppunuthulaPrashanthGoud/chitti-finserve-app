@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'lead_provider.dart';
+import '../../main.dart';
 
 class AppliedLoansScreen extends ConsumerStatefulWidget {
   const AppliedLoansScreen({super.key});
@@ -39,15 +40,15 @@ class _AppliedLoansScreenState extends ConsumerState<AppliedLoansScreen> with Ti
     
     return Scaffold(
       body: Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF005DFF), Color(0xFF5BB5FF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF005DFF), Color(0xFF5BB5FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
-      ),
         child: SafeArea(
           child: FadeTransition(
             opacity: _fadeAnimation,
@@ -77,6 +78,46 @@ class _AppliedLoansScreenState extends ConsumerState<AppliedLoansScreen> with Ti
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
+          // Top row with menu button
+          Row(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  onPressed: () {
+                    // Navigate to main navigation with applications tab selected
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (context) => const MainNavScreen(initialIndex: 1),
+                      ),
+                      (route) => false,
+                    );
+                  },
+                  icon: const Icon(Icons.menu, color: Colors.white),
+                  iconSize: 20,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  onPressed: () {
+                    // Refresh applications
+                    ref.invalidate(leadListProvider);
+                  },
+                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  iconSize: 20,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -84,27 +125,21 @@ class _AppliedLoansScreenState extends ConsumerState<AppliedLoansScreen> with Ti
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.white.withOpacity(0.2)),
             ),
-            child: Icon(
+            child: const Icon(
               Icons.assignment_outlined,
               size: 48,
               color: Colors.white,
             ),
           ),
           const SizedBox(height: 16),
-          AnimatedTextKit(
-            animatedTexts: [
-              TypewriterAnimatedText(
-                'My Applications',
-                textStyle: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Montserrat',
-                ),
-                speed: const Duration(milliseconds: 100),
-              ),
-            ],
-            totalRepeatCount: 1,
+          Text(
+            'My Applications',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Montserrat',
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -120,22 +155,22 @@ class _AppliedLoansScreenState extends ConsumerState<AppliedLoansScreen> with Ti
     );
   }
 
-  Widget _buildLeadsList(List<MockLead> leads) {
-    if (leads.isEmpty) {
+  Widget _buildLeadsList(List<Application> applications) {
+    if (applications.isEmpty) {
       return _buildEmptyState();
     }
     
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: leads.length,
+      itemCount: applications.length,
       itemBuilder: (context, index) {
-        final lead = leads[index];
-        return _buildLeadCard(lead, index);
+        final application = applications[index];
+        return _buildLeadCard(application, index);
       },
     );
   }
 
-  Widget _buildLeadCard(MockLead lead, int index) {
+  Widget _buildLeadCard(Application application, int index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Card(
@@ -151,12 +186,12 @@ class _AppliedLoansScreenState extends ConsumerState<AppliedLoansScreen> with Ti
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(lead.status).withOpacity(0.1),
+                      color: _getStatusColor(application.status).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
-                      _getStatusIcon(lead.status),
-                      color: _getStatusColor(lead.status),
+                      _getStatusIcon(application.status),
+                      color: _getStatusColor(application.status),
                       size: 24,
                     ),
                   ),
@@ -166,7 +201,7 @@ class _AppliedLoansScreenState extends ConsumerState<AppliedLoansScreen> with Ti
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          lead.loanType,
+                          application.loanType,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
@@ -176,7 +211,16 @@ class _AppliedLoansScreenState extends ConsumerState<AppliedLoansScreen> with Ti
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Applied on ${lead.appliedDate}',
+                          '₹${application.loanAmount.toStringAsFixed(0)} • ${application.category}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                            fontFamily: 'Montserrat',
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Applied on ${application.appliedDate}',
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 14,
@@ -186,41 +230,55 @@ class _AppliedLoansScreenState extends ConsumerState<AppliedLoansScreen> with Ti
                       ],
                     ),
                   ),
-                  _buildStatusChip(lead.status),
+                  // Category icon on the right
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF005DFF).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.category,
+                      color: const Color(0xFF005DFF),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildStatusChip(application.status),
                 ],
               ),
               
               const SizedBox(height: 16),
               
               // Progress Steps
-              _buildProgressSteps(lead.status),
+              _buildProgressSteps(application.status),
               
-              if (lead.status == 'Approved' || lead.status == 'Rejected')
+              if (application.status == 'approved' || application.status == 'rejected')
                 Container(
                   margin: const EdgeInsets.only(top: 16),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(lead.status).withOpacity(0.1),
+                    color: _getStatusColor(application.status).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: _getStatusColor(lead.status).withOpacity(0.3),
+                      color: _getStatusColor(application.status).withOpacity(0.3),
                     ),
                   ),
                   child: Row(
                     children: [
                       Icon(
-                        lead.status == 'Approved' ? Icons.check_circle : Icons.cancel,
-                        color: _getStatusColor(lead.status),
+                        application.status == 'approved' ? Icons.check_circle : Icons.cancel,
+                        color: _getStatusColor(application.status),
                         size: 20,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          lead.status == 'Approved' 
+                          application.status == 'approved' 
                               ? 'Congratulations! Your loan has been approved.'
                               : 'Your loan application has been rejected.',
                           style: TextStyle(
-                            color: _getStatusColor(lead.status),
+                            color: _getStatusColor(application.status),
                             fontSize: 14,
                             fontFamily: 'Montserrat',
                             fontWeight: FontWeight.w500,
@@ -257,8 +315,8 @@ class _AppliedLoansScreenState extends ConsumerState<AppliedLoansScreen> with Ti
   }
 
   Widget _buildProgressSteps(String currentStatus) {
-    final steps = ['Under Review', 'In Process', 'Approved'];
-    final currentIndex = steps.indexOf(currentStatus);
+    final steps = ['pending', 'under_review', 'approved'];
+    final currentIndex = steps.indexOf(currentStatus.toLowerCase());
     
     return Column(
       children: [
@@ -309,7 +367,7 @@ class _AppliedLoansScreenState extends ConsumerState<AppliedLoansScreen> with Ti
             
             return Expanded(
               child: Text(
-                step,
+                step.replaceAll('_', ' ').toUpperCase(),
                 style: TextStyle(
                   color: isCompleted 
                       ? _getStatusColor(currentStatus)
@@ -328,30 +386,34 @@ class _AppliedLoansScreenState extends ConsumerState<AppliedLoansScreen> with Ti
   }
 
   Color _getStatusColor(String status) {
-    switch (status) {
-      case 'Under Review':
+    switch (status.toLowerCase()) {
+      case 'pending':
         return Colors.orange;
-      case 'In Process':
+      case 'under_review':
         return Colors.blue;
-      case 'Approved':
+      case 'approved':
         return Colors.green;
-      case 'Rejected':
+      case 'rejected':
         return Colors.red;
+      case 'disbursed':
+        return Colors.purple;
       default:
         return Colors.grey;
     }
   }
 
   IconData _getStatusIcon(String status) {
-    switch (status) {
-      case 'Under Review':
-        return Icons.visibility;
-      case 'In Process':
+    switch (status.toLowerCase()) {
+      case 'pending':
         return Icons.schedule;
-      case 'Approved':
+      case 'under_review':
+        return Icons.visibility;
+      case 'approved':
         return Icons.check_circle;
-      case 'Rejected':
+      case 'rejected':
         return Icons.cancel;
+      case 'disbursed':
+        return Icons.payment;
       default:
         return Icons.assignment;
     }

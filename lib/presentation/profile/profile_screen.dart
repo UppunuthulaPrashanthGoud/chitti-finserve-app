@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'profile_provider.dart';
 import '../../data/model/profile_model.dart';
+import '../../core/validation_helper.dart';
 import '../legal/legal_menu_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -16,50 +17,17 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _mobileController = TextEditingController();
   final _emailController = TextEditingController();
-  final _loanAmountController = TextEditingController();
-  final _monthlyIncomeController = TextEditingController();
-  final _occupationController = TextEditingController();
+  final _mobileController = TextEditingController();
   final _aadharNumberController = TextEditingController();
   final _panNumberController = TextEditingController();
-  
-  String? _selectedPurpose;
-  String? _selectedLoanAmount;
   String? _profilePicturePath;
   String? _aadharUploadPath;
   String? _panUploadPath;
   bool _isEditing = false;
   bool _isLoading = false;
-  
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-
-  final List<String> _loanPurposes = [
-    'Personal',
-    'Business',
-    'OD',
-    'Mortgage',
-    'Home',
-    'Car',
-    'Insurance',
-    'Credit Card',
-    'Doctor',
-    'Education',
-    'Others'
-  ];
-
-  final List<String> _loanAmounts = [
-    '₹50,000',
-    '₹1,00,000',
-    '₹2,00,000',
-    '₹5,00,000',
-    '₹10,00,000',
-    '₹20,00,000',
-    '₹50,00,000',
-    '₹1,00,00,000',
-    'Custom Amount'
-  ];
 
   @override
   void initState() {
@@ -79,11 +47,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
   void dispose() {
     _animationController.dispose();
     _nameController.dispose();
-    _mobileController.dispose();
     _emailController.dispose();
-    _loanAmountController.dispose();
-    _monthlyIncomeController.dispose();
-    _occupationController.dispose();
+    _mobileController.dispose();
     _aadharNumberController.dispose();
     _panNumberController.dispose();
     super.dispose();
@@ -94,13 +59,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
     profileAsync.whenData((profile) {
       if (profile != null) {
         setState(() {
-          _nameController.text = profile.fullName;
-          _mobileController.text = profile.mobileNumber;
-          _emailController.text = profile.emailId ?? '';
-          _loanAmountController.text = profile.loanAmount ?? '';
-          _selectedPurpose = profile.purposeOfLoan;
-          _monthlyIncomeController.text = profile.monthlyIncome ?? '';
-          _occupationController.text = profile.occupation ?? '';
+          _nameController.text = profile.name ?? '';
+          _emailController.text = profile.email ?? '';
+          _mobileController.text = profile.phone ?? '';
           _aadharNumberController.text = profile.aadharNumber ?? '';
           _panNumberController.text = profile.panNumber ?? '';
           _profilePicturePath = profile.profilePicture;
@@ -113,55 +74,45 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
-
+    
     setState(() {
       _isLoading = true;
     });
-
+    
     try {
       await ref.read(profileProvider.notifier).updateProfile(
-        fullName: _nameController.text,
-        mobileNumber: _mobileController.text,
-        emailId: _emailController.text.isEmpty ? null : _emailController.text,
-        loanAmount: _loanAmountController.text.isEmpty ? null : _loanAmountController.text,
-        purposeOfLoan: _selectedPurpose,
-        monthlyIncome: _monthlyIncomeController.text.isEmpty ? null : _monthlyIncomeController.text,
-        occupation: _occupationController.text.isEmpty ? null : _occupationController.text,
-        aadharNumber: _aadharNumberController.text.isEmpty ? null : _aadharNumberController.text,
-        panNumber: _panNumberController.text.isEmpty ? null : _panNumberController.text,
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
+        aadharNumber: _aadharNumberController.text.trim().isEmpty ? null : _aadharNumberController.text.trim(),
+        panNumber: _panNumberController.text.trim().isEmpty ? null : _panNumberController.text.trim(),
         profilePicture: _profilePicturePath,
         aadharUpload: _aadharUploadPath,
         panUpload: _panUploadPath,
       );
-
+      
       setState(() {
         _isEditing = false;
         _isLoading = false;
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile updated successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      
+      ValidationHelper.showSuccessMessage(context, 'Profile updated successfully!');
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to update profile: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      
+      // Handle different types of errors
+      if (e.toString().contains('Validation error') || e.toString().contains('400')) {
+        ValidationHelper.showValidationError(context, e.toString());
+      } else {
+        ValidationHelper.showErrorMessage(context, 'Failed to update profile: ${e.toString()}');
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final profileAsync = ref.watch(profileProvider);
-    
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -180,12 +131,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 children: [
-                  // Header
                   _buildHeader(),
-                  
                   const SizedBox(height: 32),
-                  
-                  // Profile Form
                   _buildProfileForm(profileAsync),
                 ],
               ),
@@ -282,129 +229,85 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                   
                   const SizedBox(height: 24),
                   
-                  // Full Name
-                  _buildInputField(
+                  // Name
+                  TextFormField(
                     controller: _nameController,
-                    label: 'Full Name',
-                    icon: Icons.person,
-                    hint: 'Enter your full name',
                     enabled: _isEditing,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your full name';
-                      }
-                      return null;
-                    },
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Mobile Number
-                  _buildInputField(
-                    controller: _mobileController,
-                    label: 'Mobile Number',
-                    icon: Icons.phone,
-                    hint: 'Enter mobile number',
-                    enabled: _isEditing,
-                    keyboardType: TextInputType.phone,
-                    formatter: FilteringTextInputFormatter.digitsOnly,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter mobile number';
-                      }
-                      if (value.length != 10) {
-                        return 'Please enter a valid 10-digit mobile number';
-                      }
-                      return null;
-                    },
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Email ID (Optional)
-                  _buildInputField(
-                    controller: _emailController,
-                    label: 'Email ID (Optional)',
-                    icon: Icons.email,
-                    hint: 'Enter email address',
-                    enabled: _isEditing,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Loan Amount
-                  _buildDropdownField(
-                    label: 'Loan Amount',
-                    icon: Icons.currency_rupee,
-                    value: _selectedLoanAmount,
-                    items: _loanAmounts.map((amount) => 
-                      DropdownMenuItem(value: amount, child: Text(amount))
-                    ).toList(),
-                    onChanged: _isEditing ? (value) {
-                      setState(() {
-                        _selectedLoanAmount = value;
-                        if (value == 'Custom Amount') {
-                          _loanAmountController.clear();
-                        } else {
-                          _loanAmountController.text = value ?? '';
-                        }
-                      });
-                    } : null,
-                  ),
-                  
-                  if (_selectedLoanAmount == 'Custom Amount') ...[
-                    const SizedBox(height: 16),
-                    _buildInputField(
-                      controller: _loanAmountController,
-                      label: 'Custom Amount',
-                      icon: Icons.currency_rupee,
-                      hint: 'Enter custom amount',
-                      enabled: _isEditing,
-                      keyboardType: TextInputType.number,
-                      formatter: FilteringTextInputFormatter.digitsOnly,
+                    decoration: InputDecoration(
+                      labelText: 'Name',
+                      prefixIcon: Icon(Icons.person, color: Color(0xFF005DFF)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: Colors.grey[100],
                     ),
-                  ],
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Purpose of Loan
-                  _buildDropdownField(
-                    label: 'Purpose of Loan',
-                    icon: Icons.category,
-                    value: _selectedPurpose,
-                    items: _loanPurposes.map((purpose) => 
-                      DropdownMenuItem(value: purpose, child: Text(purpose))
-                    ).toList(),
-                    onChanged: _isEditing ? (value) {
-                      setState(() {
-                        _selectedPurpose = value;
-                      });
-                    } : null,
+                    validator: ValidationHelper.validateName,
                   ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Monthly Income
-                  _buildInputField(
-                    controller: _monthlyIncomeController,
-                    label: 'Monthly Income',
-                    icon: Icons.account_balance_wallet,
-                    hint: 'Enter monthly income',
+                  const SizedBox(height: 16),
+                  // Email
+                  TextFormField(
+                    controller: _emailController,
                     enabled: _isEditing,
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      prefixIcon: Icon(Icons.email, color: Color(0xFF005DFF)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                    ),
+                    validator: ValidationHelper.validateEmail,
+                  ),
+                  const SizedBox(height: 16),
+                  // Phone (read-only)
+                  TextFormField(
+                    controller: _mobileController,
+                    enabled: false,
+                    decoration: InputDecoration(
+                      labelText: 'Phone Number',
+                      prefixIcon: Icon(Icons.phone, color: Color(0xFF005DFF)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Aadhar Number
+                  TextFormField(
+                    controller: _aadharNumberController,
+                    enabled: _isEditing,
+                    decoration: InputDecoration(
+                      labelText: 'Aadhar Number (Optional)',
+                      prefixIcon: Icon(Icons.credit_card, color: Color(0xFF005DFF)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                      hintText: 'Enter 12-digit Aadhar number',
+                    ),
+                    validator: ValidationHelper.validateAadharNumber,
                     keyboardType: TextInputType.number,
-                    formatter: FilteringTextInputFormatter.digitsOnly,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(12),
+                    ],
                   ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Occupation
-                  _buildInputField(
-                    controller: _occupationController,
-                    label: 'Occupation',
-                    icon: Icons.work,
-                    hint: 'Enter your occupation',
+                  const SizedBox(height: 16),
+                  // PAN Number
+                  TextFormField(
+                    controller: _panNumberController,
                     enabled: _isEditing,
+                    decoration: InputDecoration(
+                      labelText: 'PAN Number (Optional)',
+                      prefixIcon: Icon(Icons.credit_card, color: Color(0xFF005DFF)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                      hintText: 'e.g., ABCDE1234F',
+                    ),
+                    validator: ValidationHelper.validatePanNumber,
+                    textCapitalization: TextCapitalization.characters,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
+                      LengthLimitingTextInputFormatter(10),
+                    ],
                   ),
                   
                   const SizedBox(height: 20),
@@ -419,37 +322,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                   
                   const SizedBox(height: 20),
                   
-                  // Aadhar Number (Optional)
-                  _buildInputField(
-                    controller: _aadharNumberController,
-                    label: 'Aadhar Number (Optional)',
-                    icon: Icons.credit_card,
-                    hint: 'Enter Aadhar number',
-                    enabled: _isEditing,
-                    keyboardType: TextInputType.number,
-                    formatter: FilteringTextInputFormatter.digitsOnly,
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
                   // Aadhar Upload (Optional)
                   _buildFileUploadField(
                     label: 'Upload Aadhar (Optional)',
                     icon: Icons.upload_file,
                     filePath: _aadharUploadPath,
                     onTap: _isEditing ? () => _selectAadharFile() : null,
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // PAN Number (Optional)
-                  _buildInputField(
-                    controller: _panNumberController,
-                    label: 'PAN Number (Optional)',
-                    icon: Icons.credit_card,
-                    hint: 'Enter PAN number',
-                    enabled: _isEditing,
-                    keyboardType: TextInputType.text,
                   ),
                   
                   const SizedBox(height: 20),
@@ -711,32 +589,53 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
   }
 
   Future<void> _selectProfilePicture() async {
-    // TODO: Implement image picker
-    setState(() {
-      _profilePicturePath = 'profile_picture.jpg';
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile picture selected')),
-    );
+    try {
+      // TODO: Implement actual image picker with file upload
+      // For now, simulate file upload
+      setState(() {
+        _profilePicturePath = 'profile_picture.jpg';
+      });
+      
+      // Upload to backend
+      await ref.read(profileProvider.notifier).uploadDocument('profilePicture', _profilePicturePath!);
+      
+      ValidationHelper.showSuccessMessage(context, 'Profile picture uploaded successfully');
+    } catch (e) {
+      ValidationHelper.showErrorMessage(context, 'Failed to upload profile picture: ${e.toString()}');
+    }
   }
 
   Future<void> _selectAadharFile() async {
-    // TODO: Implement file picker
-    setState(() {
-      _aadharUploadPath = 'aadhar_document.pdf';
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Aadhar document selected')),
-    );
+    try {
+      // TODO: Implement actual file picker with file upload
+      // For now, simulate file upload
+      setState(() {
+        _aadharUploadPath = 'aadhar_document.pdf';
+      });
+      
+      // Upload to backend
+      await ref.read(profileProvider.notifier).uploadDocument('aadharUpload', _aadharUploadPath!);
+      
+      ValidationHelper.showSuccessMessage(context, 'Aadhar document uploaded successfully');
+    } catch (e) {
+      ValidationHelper.showErrorMessage(context, 'Failed to upload Aadhar document: ${e.toString()}');
+    }
   }
 
   Future<void> _selectPanFile() async {
-    // TODO: Implement file picker
-    setState(() {
-      _panUploadPath = 'pan_document.pdf';
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('PAN document selected')),
-    );
+    try {
+      // TODO: Implement actual file picker with file upload
+      // For now, simulate file upload
+      setState(() {
+        _panUploadPath = 'pan_document.pdf';
+      });
+      
+      // Upload to backend
+      await ref.read(profileProvider.notifier).uploadDocument('panUpload', _panUploadPath!);
+      
+      ValidationHelper.showSuccessMessage(context, 'PAN document uploaded successfully');
+    } catch (e) {
+      ValidationHelper.showErrorMessage(context, 'Failed to upload PAN document: ${e.toString()}');
+    }
   }
 } 

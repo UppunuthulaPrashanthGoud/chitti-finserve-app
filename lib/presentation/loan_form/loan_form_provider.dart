@@ -16,9 +16,9 @@ final loanFormStateProvider = StateNotifierProvider<LoanFormNotifier, LoanFormSt
   return LoanFormNotifier(repository);
 });
 
-final userApplicationsProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, userId) async {
+final userApplicationsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final repo = ref.read(loanFormRepositoryProvider);
-  return repo.getUserApplications(userId);
+  return repo.getUserApplications();
 });
 
 final applicationByIdProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, applicationId) async {

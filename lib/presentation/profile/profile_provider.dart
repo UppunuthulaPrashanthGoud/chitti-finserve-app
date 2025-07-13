@@ -3,34 +3,29 @@ import '../../data/model/profile_model.dart';
 import '../../data/repository/profile_repository.dart';
 
 final profileProvider = StateNotifierProvider<ProfileNotifier, AsyncValue<ProfileModel?>>((ref) {
-  return ProfileNotifier(ProfileRepository());
+  final repo = ref.read(profileRepositoryProvider);
+  return ProfileNotifier(repo);
 });
 
 class ProfileNotifier extends StateNotifier<AsyncValue<ProfileModel?>> {
   final ProfileRepository _repository;
-
   ProfileNotifier(this._repository) : super(const AsyncValue.loading()) {
-    _loadProfile();
+    loadProfile();
   }
 
-  Future<void> _loadProfile() async {
+  Future<void> loadProfile() async {
+    state = const AsyncValue.loading();
     try {
-      state = const AsyncValue.loading();
       final profile = await _repository.getProfile();
       state = AsyncValue.data(profile);
-    } catch (e, stackTrace) {
-      state = AsyncValue.error(e, stackTrace);
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
     }
   }
 
   Future<void> updateProfile({
-    required String fullName,
-    required String mobileNumber,
-    String? emailId,
-    String? loanAmount,
-    String? purposeOfLoan,
-    String? monthlyIncome,
-    String? occupation,
+    String? name,
+    String? email,
     String? aadharNumber,
     String? panNumber,
     String? profilePicture,
@@ -38,26 +33,36 @@ class ProfileNotifier extends StateNotifier<AsyncValue<ProfileModel?>> {
     String? panUpload,
   }) async {
     try {
-      final updatedProfile = ProfileModel(
-        fullName: fullName,
-        mobileNumber: mobileNumber,
-        emailId: emailId,
-        loanAmount: loanAmount,
-        purposeOfLoan: purposeOfLoan,
-        monthlyIncome: monthlyIncome,
-        occupation: occupation,
+      final currentProfile = state.value;
+      if (currentProfile == null) return;
+      final updatedProfile = currentProfile.copyWith(
+        name: name,
+        email: email,
         aadharNumber: aadharNumber,
         panNumber: panNumber,
         profilePicture: profilePicture,
         aadharUpload: aadharUpload,
         panUpload: panUpload,
       );
-      
       await _repository.updateProfile(updatedProfile);
       state = AsyncValue.data(updatedProfile);
-    } catch (e, stackTrace) {
-      state = AsyncValue.error(e, stackTrace);
-      rethrow;
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
+    }
+  }
+
+  Future<void> clearProfile() async {
+    await _repository.clearProfile();
+    state = const AsyncValue.data(null);
+  }
+
+  Future<void> uploadDocument(String documentType, String documentUrl) async {
+    try {
+      await _repository.uploadDocument(documentType, documentUrl);
+      // Reload profile to get updated data
+      await loadProfile();
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
     }
   }
 } 

@@ -7,32 +7,24 @@ part of 'profile_model.dart';
 // **************************************************************************
 
 ProfileModel _$ProfileModelFromJson(Map<String, dynamic> json) => ProfileModel(
-      fullName: json['fullName'] as String,
-      mobileNumber: json['mobileNumber'] as String,
-      emailId: json['emailId'] as String?,
-      loanAmount: json['loanAmount'] as String?,
-      purposeOfLoan: json['purposeOfLoan'] as String?,
-      monthlyIncome: json['monthlyIncome'] as String?,
-      occupation: json['occupation'] as String?,
+      name: json['name'] as String?,
+      email: json['email'] as String?,
+      phone: json['phone'] as String?,
       profilePicture: json['profilePicture'] as String?,
-      aadharUpload: json['aadharUpload'] as String?,
-      panUpload: json['panUpload'] as String?,
       aadharNumber: json['aadharNumber'] as String?,
+      aadharUpload: json['aadharUpload'] as String?,
       panNumber: json['panNumber'] as String?,
+      panUpload: json['panUpload'] as String?,
     );
 
 Map<String, dynamic> _$ProfileModelToJson(ProfileModel instance) =>
     <String, dynamic>{
-      'fullName': instance.fullName,
-      'mobileNumber': instance.mobileNumber,
-      'emailId': instance.emailId,
-      'loanAmount': instance.loanAmount,
-      'purposeOfLoan': instance.purposeOfLoan,
-      'monthlyIncome': instance.monthlyIncome,
-      'occupation': instance.occupation,
+      'name': instance.name,
+      'email': instance.email,
+      'phone': instance.phone,
       'profilePicture': instance.profilePicture,
-      'aadharUpload': instance.aadharUpload,
-      'panUpload': instance.panUpload,
       'aadharNumber': instance.aadharNumber,
+      'aadharUpload': instance.aadharUpload,
       'panNumber': instance.panNumber,
+      'panUpload': instance.panUpload,
     };

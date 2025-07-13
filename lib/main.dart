@@ -71,13 +71,20 @@ class _SplashRouterScreenState extends State<SplashRouterScreen> {
 }
 
 class MainNavScreen extends StatefulWidget {
-  const MainNavScreen({super.key});
+  final int initialIndex;
+  const MainNavScreen({super.key, this.initialIndex = 0});
   @override
   State<MainNavScreen> createState() => _MainNavScreenState();
 }
 
 class _MainNavScreenState extends State<MainNavScreen> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
+  
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
+  }
   final List<Widget> _screens = const [
     HomeScreen(),
     AppliedLoansScreen(),

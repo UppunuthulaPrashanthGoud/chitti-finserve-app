@@ -62,12 +62,12 @@ class ContactScreen extends ConsumerWidget {
                   const SizedBox(height: 32),
                   ListTile(
                     leading: const Icon(Icons.location_on, color: Color(0xFF005DFF)),
-                    title: Text(contact.officeAddress, style: const TextStyle(fontFamily: 'Montserrat')),
+                    title: Text(contact.officeAddress ?? 'Address not available', style: const TextStyle(fontFamily: 'Montserrat')),
                   ),
                   ListTile(
                     leading: const Icon(Icons.phone, color: Color(0xFF005DFF)),
-                    title: Text(contact.phone, style: const TextStyle(fontFamily: 'Montserrat')),
-                    onTap: () => _launchPhone(contact.phone),
+                    title: Text(contact.phone ?? 'Phone not available', style: const TextStyle(fontFamily: 'Montserrat')),
+                    onTap: contact.phone != null ? () => _launchPhone(contact.phone!) : null,
                     trailing: Container(
                       decoration: BoxDecoration(
                         color: Color.alphaBlend(Colors.green.withAlpha((0.12 * 255).toInt()), Colors.white),
@@ -80,7 +80,7 @@ class ContactScreen extends ConsumerWidget {
                   ListTile(
                     leading: const Icon(Icons.chat, color: Color(0xFF005DFF)),
                     title: const Text('WhatsApp Chat', style: TextStyle(fontFamily: 'Montserrat')),
-                    onTap: () => _launchWhatsApp(contact.whatsapp),
+                    onTap: contact.whatsapp != null ? () => _launchWhatsApp(contact.whatsapp!) : null,
                     trailing: Container(
                       decoration: BoxDecoration(
                         color: Color.alphaBlend(Colors.teal.withAlpha((0.12 * 255).toInt()), Colors.white),
@@ -92,8 +92,8 @@ class ContactScreen extends ConsumerWidget {
                   ),
                   ListTile(
                     leading: const Icon(Icons.email, color: Color(0xFF005DFF)),
-                    title: Text(contact.email, style: const TextStyle(fontFamily: 'Montserrat')),
-                    onTap: () => _launchEmail(contact.email),
+                    title: Text(contact.email ?? 'Email not available', style: const TextStyle(fontFamily: 'Montserrat')),
+                    onTap: contact.email != null ? () => _launchEmail(contact.email!) : null,
                     trailing: Container(
                       decoration: BoxDecoration(
                         color: Color.alphaBlend(Colors.deepPurple.withAlpha((0.12 * 255).toInt()), Colors.white),
@@ -105,7 +105,7 @@ class ContactScreen extends ConsumerWidget {
                   ),
                   ListTile(
                     leading: const Icon(Icons.access_time, color: Color(0xFF005DFF)),
-                    title: Text(contact.hours, style: const TextStyle(fontFamily: 'Montserrat')),
+                    title: Text(contact.hours ?? 'Working hours not available', style: const TextStyle(fontFamily: 'Montserrat')),
                   ),
                 ],
               ),

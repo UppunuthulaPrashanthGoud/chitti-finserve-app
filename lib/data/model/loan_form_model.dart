@@ -4,18 +4,18 @@ part 'loan_form_model.g.dart';
 
 @JsonSerializable()
 class LoanFormField {
-  final String id;
-  final String label;
-  final String type;
-  final bool required;
+  final String? id;
+  final String? label;
+  final String? type;
+  final bool? required;
   final bool? autofill;
-  final List<String>? options;
+  final List<dynamic>? options; // Can be List<String> or List<Map<String, dynamic>>
 
   LoanFormField({
-    required this.id,
-    required this.label,
-    required this.type,
-    required this.required,
+    this.id,
+    this.label,
+    this.type,
+    this.required,
     this.autofill,
     this.options,
   });
@@ -26,18 +26,32 @@ class LoanFormField {
 
 @JsonSerializable()
 class LoanFormModel {
-  final String title;
-  final List<LoanFormField> fields;
-  final String submitButton;
-  final String thankYouMessage;
-  final String errorMessage;
+  final String? title;
+  final List<LoanFormField>? fields;
+  final String? submitButton;
+  final String? thankYouMessage;
+  final String? errorMessage;
+  final String? formTitle;
+  final String? formSubtitle;
+  final bool? enableDocuments;
+  final bool? enableTerms;
+  final List<String>? requiredFields;
+  final String? categories;
+  final bool? isActive;
 
   LoanFormModel({
-    required this.title,
-    required this.fields,
-    required this.submitButton,
-    required this.thankYouMessage,
-    required this.errorMessage,
+    this.title,
+    this.fields,
+    this.submitButton,
+    this.thankYouMessage,
+    this.errorMessage,
+    this.formTitle,
+    this.formSubtitle,
+    this.enableDocuments,
+    this.enableTerms,
+    this.requiredFields,
+    this.categories,
+    this.isActive,
   });
 
   factory LoanFormModel.fromJson(Map<String, dynamic> json) => _$LoanFormModelFromJson(json);

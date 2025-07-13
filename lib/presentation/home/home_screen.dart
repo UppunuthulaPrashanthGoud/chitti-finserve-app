@@ -10,6 +10,12 @@ import '../loan_form/loan_form_screen.dart';
 import '../emi/emi_screen.dart';
 import '../../data/model/banner_model.dart';
 import '../../data/model/category_model.dart';
+import '../../core/app_config.dart';
+import '../../data/repository/loan_form_repository.dart';
+import '../loan_form/loan_form_provider.dart';
+
+// Constants
+final String kCategoryIconBaseUrl = AppConfig.apiBaseUrl.replaceFirst('/api', '') + '/uploads/';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -97,7 +103,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                 // Auto-sliding Banner Section
                 _buildBannerSection(bannersAsync),
                 // Categories Section
-                _buildCategoriesSection(categoriesAsync),
+                _buildCategoriesSection(categoriesAsync, ref),
               ],
             ),
           ),
@@ -318,11 +324,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                             MaterialPageRoute(builder: (_) => const EmiScreen()),
                           );
                         } else {
+                          // For banner actions, we don't have a specific category, so pass null
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => LoanFormScreen(
                                 prefillLoanType: banner.title.split(' ')[0],
+                                selectedCategory: null, // No specific category for banner actions
                               ),
                             ),
                           );
@@ -352,7 +360,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildCategoriesSection(AsyncValue<List<CategoryModel>> categoriesAsync) {
+  Widget _buildCategoriesSection(AsyncValue<List<CategoryModel>> categoriesAsync, WidgetRef ref) {
     return categoriesAsync.when(
       data: (categories) {
         if (categories.isEmpty) {
@@ -395,7 +403,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                       columnCount: 3,
                       child: ScaleAnimation(
                         child: FadeInAnimation(
-                          child: _buildCategoryCard(cat),
+                          child: _buildCategoryCard(cat, ref),
                         ),
                       ),
                     );
@@ -411,73 +419,107 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildCategoryCard(CategoryModel cat) {
-                              return MouseRegion(
-                                cursor: SystemMouseCursors.click,
-                                child: InkWell(
-                                  onTap: () {
+  Widget _buildCategoryCard(CategoryModel cat, WidgetRef ref) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: InkWell(
+        onTap: () async {
+          final scaffoldMessenger = ScaffoldMessenger.of(context);
+          final repository = ref.read(loanFormRepositoryProvider);
+          try {
+            final applications = await repository.getUserApplications();
+            final alreadyApplied = applications.any((app) {
+              final appCategory = app['category']?['name'] ?? '';
+              final status = app['status'] ?? '';
+              return appCategory == cat.name && status != 'completed';
+            });
+            if (alreadyApplied) {
+              scaffoldMessenger.showSnackBar(
+                SnackBar(
+                  content: Text('You already have a pending application for this category.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+          } catch (e) {
+            scaffoldMessenger.showSnackBar(
+              SnackBar(
+                content: Text('Failed to check existing applications. Please try again.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
           Navigator.push(
             context,
-                                      MaterialPageRoute(
-                                        builder: (_) => LoanFormScreen(
-                                          prefillMobile: '',
-                                          prefillLoanType: cat.name,
-                                        ),
-                                      ),
-                                    );
-                                  },
+            MaterialPageRoute(
+              builder: (_) => LoanFormScreen(
+                prefillMobile: '',
+                prefillLoanType: cat.name ?? 'Unknown Category',
+                selectedCategory: cat,
+              ),
+            ),
+          );
+        },
         borderRadius: BorderRadius.circular(20),
         child: Container(
-                                    decoration: BoxDecoration(
+          decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-                                      boxShadow: [
-                                        BoxShadow(
+            boxShadow: [
+              BoxShadow(
                 color: Colors.black.withOpacity(0.1),
                 blurRadius: 20,
-                                          offset: const Offset(0, 8),
-                                        ),
-                                      ],
+                offset: const Offset(0, 8),
+              ),
+            ],
             color: Colors.white,
-                                    ),
-                                    child: Padding(
+          ),
+          child: Padding(
             padding: const EdgeInsets.all(8),
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: const Color(0xFF005DFF).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Image.asset(
-                                            cat.icon,
-                    width: 52,
-                    height: 52,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => 
-                        Icon(Icons.category, size: 52, color: const Color(0xFF005DFF)),
-                  ),
-                                          ),
+                  child: cat.icon != null && cat.icon!.isNotEmpty
+                      ? Image.network(
+                          cat.icon!.startsWith('http')
+                              ? cat.icon!
+                              : cat.icon!.startsWith('uploads/')
+                                  ? AppConfig.apiBaseUrl.replaceFirst('/api', '') + '/' + cat.icon!
+                                  : kCategoryIconBaseUrl + cat.icon!,
+                          width: 52,
+                          height: 52,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Icon(Icons.category, size: 52, color: const Color(0xFF005DFF)),
+                        )
+                      : Icon(Icons.category, size: 52, color: const Color(0xFF005DFF)),
+                ),
                 const SizedBox(height: 6),
-                                          Text(
-                                            cat.name,
+                Text(
+                  cat.name ?? 'Unknown Category',
                   style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                     fontSize: 12,
-                                                  fontFamily: 'Montserrat',
+                    fontFamily: 'Montserrat',
                     color: Color(0xFF005DFF),
-                                                ),
-                                            textAlign: TextAlign.center,
+                  ),
+                  textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildEmptyState() {

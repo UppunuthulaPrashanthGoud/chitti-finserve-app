@@ -81,9 +81,14 @@ class LoginNotifier extends StateNotifier<LoginState> {
         isAuthenticated: true,
       );
     } catch (e) {
+      // Clean the error message by removing any "Exception:" prefix
+      String errorMessage = e.toString();
+      if (errorMessage.startsWith('Exception: ')) {
+        errorMessage = errorMessage.substring(11); // Remove "Exception: " prefix
+      }
       state = state.copyWith(
         isLoading: false,
-        error: e.toString(),
+        error: errorMessage,
       );
     }
   }
@@ -95,9 +100,14 @@ class LoginNotifier extends StateNotifier<LoginState> {
       await _repository.sendOTP(phone);
       state = state.copyWith(isLoading: false);
     } catch (e) {
+      // Clean the error message by removing any "Exception:" prefix
+      String errorMessage = e.toString();
+      if (errorMessage.startsWith('Exception: ')) {
+        errorMessage = errorMessage.substring(11); // Remove "Exception: " prefix
+      }
       state = state.copyWith(
         isLoading: false,
-        error: e.toString(),
+        error: errorMessage,
       );
     }
   }
@@ -107,14 +117,33 @@ class LoginNotifier extends StateNotifier<LoginState> {
     
     try {
       final result = await _repository.verifyOTP(phone, otp);
-      final token = result['token'] as String;
-      final userData = result['data'] as Map<String, dynamic>;
+      
+      // Validate response structure
+      if (result == null) {
+        throw Exception('Invalid response from server');
+      }
+      
+      final data = result['data'] as Map<String, dynamic>?;
+      if (data == null) {
+        throw Exception('Invalid response format from server');
+      }
+      
+      final token = data['token'] as String?;
+      final userData = data['user'] as Map<String, dynamic>?;
+      
+      if (token == null) {
+        throw Exception('Authentication token not received');
+      }
+      
+      if (userData == null) {
+        throw Exception('User data not received');
+      }
       
       // Save token and user data
       await _userRepository.saveAuthToken(token);
       await _userRepository.saveUserData(userData);
       
-      // Update auth state
+      // Update auth state only after successful verification
       await _ref.read(authStateProvider.notifier).login(phone, otp);
       
       state = state.copyWith(
@@ -127,6 +156,8 @@ class LoginNotifier extends StateNotifier<LoginState> {
         isLoading: false,
         error: e.toString(),
       );
+      // Don't proceed with authentication if OTP verification fails
+      throw e; // Re-throw the error to prevent login
     }
   }
 
@@ -151,9 +182,14 @@ class LoginNotifier extends StateNotifier<LoginState> {
         isAuthenticated: true,
       );
     } catch (e) {
+      // Clean the error message by removing any "Exception:" prefix
+      String errorMessage = e.toString();
+      if (errorMessage.startsWith('Exception: ')) {
+        errorMessage = errorMessage.substring(11); // Remove "Exception: " prefix
+      }
       state = state.copyWith(
         isLoading: false,
-        error: e.toString(),
+        error: errorMessage,
       );
     }
   }

@@ -164,6 +164,19 @@ class NetworkService {
       return json.decode(response.body);
     } else {
       final errorBody = json.decode(response.body);
+      
+      // Handle validation errors specifically
+      if (response.statusCode == 400 && errorBody['errors'] != null) {
+        final errors = errorBody['errors'] as List;
+        final validationMessages = errors.map((error) => error['msg'] ?? 'Validation error').join(', ');
+        throw ApiException(
+          message: validationMessages,
+          statusCode: response.statusCode,
+          data: errorBody,
+        );
+      }
+      
+      // Handle other errors
       throw ApiException(
         message: errorBody['message'] ?? 'Request failed',
         statusCode: response.statusCode,
@@ -187,5 +200,5 @@ class ApiException implements Exception {
   });
 
   @override
-  String toString() => 'ApiException: $message (Status: $statusCode)';
+  String toString() => message; // Return only the message without prefix
 } 
