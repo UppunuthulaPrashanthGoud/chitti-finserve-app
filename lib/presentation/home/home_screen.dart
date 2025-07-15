@@ -5,20 +5,18 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'category_provider.dart';
 import 'banner_provider.dart';
-import '../../core/app_theme.dart';
 import '../loan_form/loan_form_screen.dart';
 import '../emi/emi_screen.dart';
 import '../../data/model/banner_model.dart';
 import '../../data/model/category_model.dart';
 import '../../core/app_config.dart';
-import '../../data/repository/loan_form_repository.dart';
+import '../../core/image_utils.dart';
 import '../loan_form/loan_form_provider.dart';
 
-// Constants
-final String kCategoryIconBaseUrl = AppConfig.apiBaseUrl.replaceFirst('/api', '') + '/uploads/';
+
 
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -57,17 +55,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
   void _nextBanner() {
     final bannersAsync = ref.read(bannerListProvider);
     bannersAsync.whenData((bannerData) {
-      if (_currentBannerIndex < bannerData.banners.length - 1) {
-        _currentBannerIndex++;
-      } else {
-        _currentBannerIndex = 0;
+      final activeBanners = bannerData.data.where((banner) => banner.isActive).toList();
+      if (activeBanners.isNotEmpty) {
+        if (_currentBannerIndex < activeBanners.length - 1) {
+          _currentBannerIndex++;
+        } else {
+          _currentBannerIndex = 0;
+        }
+        _pageController.animateToPage(
+          _currentBannerIndex,
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOut,
+        );
+        setState(() {});
       }
-      _pageController.animateToPage(
-        _currentBannerIndex,
-        duration: const Duration(milliseconds: 800),
-        curve: Curves.easeInOut,
-      );
-      setState(() {});
     });
   }
 
@@ -157,7 +158,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
   Widget _buildBannerSection(AsyncValue<BannerListModel> bannersAsync) {
     return bannersAsync.when(
       data: (bannerData) {
-        final banners = bannerData.banners;
+        final banners = bannerData.data.where((banner) => banner.isActive).toList();
+        
+        if (banners.isEmpty) {
+          return Container(
+            height: 200,
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            child: Card(
+              elevation: 8,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.image_not_supported, size: 48, color: Colors.grey[400]),
+                    const SizedBox(height: 8),
+                    Text(
+                      'No banners available',
+                      style: TextStyle(color: Colors.grey[600], fontFamily: 'Montserrat'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+        
         return Container(
           height: 200,
           margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -256,25 +282,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
           borderRadius: BorderRadius.circular(16),
           child: Stack(
             children: [
-              // Background Image
-              Image.asset(
-                banner.image,
-                width: double.infinity,
-                height: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Color(int.parse(banner.color.replaceAll('#', '0xFF'))),
-                        Color(int.parse(banner.color.replaceAll('#', '0xFF'))).withOpacity(0.8),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
-                ),
-              ),
+              // Background Image - Handle both network and asset images
+              _buildBannerImage(banner.image),
               // Gradient Overlay
               Container(
                 decoration: BoxDecoration(
@@ -305,32 +314,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                         fontFamily: 'Montserrat',
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      banner.subtitle,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 14,
-                        fontFamily: 'Montserrat',
+                    if (banner.description != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        banner.description!,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
+                          fontFamily: 'Montserrat',
+                        ),
                       ),
-                    ),
+                    ],
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
                         // Handle banner action
-                        if (banner.action.contains('EMI')) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const EmiScreen()),
-                          );
+                        if (banner.link != null && banner.link!.isNotEmpty && banner.link != '#') {
+                          // Handle external link if needed
+                          // You can add URL launcher here
                         } else {
-                          // For banner actions, we don't have a specific category, so pass null
+                          // Navigate to loan form based on banner title
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => LoanFormScreen(
-                                prefillLoanType: banner.title.split(' ')[0],
-                                selectedCategory: null, // No specific category for banner actions
+                                prefillLoanType: banner.title.split(' ')[0].toLowerCase(),
+                                selectedCategory: null,
                               ),
                             ),
                           );
@@ -338,13 +347,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
-                        foregroundColor: Color(int.parse(banner.color.replaceAll('#', '0xFF'))),
+                        foregroundColor: const Color(0xFF005DFF),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       ),
-                      child: Text(
-                        banner.action,
-                        style: const TextStyle(
+                      child: const Text(
+                        'Apply Now',
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontFamily: 'Montserrat',
                         ),
@@ -355,6 +364,71 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBannerImage(String imagePath) {
+    // Use ImageUtils to get the proper URL
+    final fullImageUrl = ImageUtils.getImageUrl(imagePath);
+    
+    // Check if it's a network image
+    if (ImageUtils.isNetworkImage(imagePath)) {
+      
+      return Image.network(
+        fullImageUrl,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildFallbackImage(),
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: Colors.grey[300],
+            child: Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                    : null,
+              ),
+            ),
+          );
+        },
+      );
+    } else {
+      // Asset image
+      return Image.asset(
+        imagePath,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildFallbackImage(),
+      );
+    }
+  }
+
+  Widget _buildFallbackImage() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF005DFF),
+            const Color(0xFF5BB5FF),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.image,
+          size: 64,
+          color: Colors.white,
         ),
       ),
     );
@@ -396,14 +470,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                             ),
                             itemCount: categories.length,
                             itemBuilder: (context, index) {
-                              final cat = categories[index];
+                              final category = categories[index];
                     return AnimationConfiguration.staggeredGrid(
                       position: index,
                       duration: const Duration(milliseconds: 600),
                       columnCount: 3,
                       child: ScaleAnimation(
                         child: FadeInAnimation(
-                          child: _buildCategoryCard(cat, ref),
+                          child: _buildCategoryCard(category, ref),
                         ),
                       ),
                     );
@@ -419,7 +493,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildCategoryCard(CategoryModel cat, WidgetRef ref) {
+  Widget _buildCategoryCard(CategoryModel category, WidgetRef ref) {
+    String? iconUrl;
+    
+    if (category.icon != null && category.icon!.isNotEmpty) {
+      iconUrl = ImageUtils.getImageUrl(category.icon);
+    }
+    
+    // Debug logging
+    if (category.icon != null && category.icon!.isNotEmpty) {
+      print('Category: ${category.name}');
+      print('Icon path: ${category.icon}');
+      print('Final URL: $iconUrl');
+    }
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: InkWell(
@@ -431,7 +517,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
             final alreadyApplied = applications.any((app) {
               final appCategory = app['category']?['name'] ?? '';
               final status = app['status'] ?? '';
-              return appCategory == cat.name && status != 'completed';
+              return appCategory == category.name && status != 'completed';
             });
             if (alreadyApplied) {
               scaffoldMessenger.showSnackBar(
@@ -456,8 +542,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
             MaterialPageRoute(
               builder: (_) => LoanFormScreen(
                 prefillMobile: '',
-                prefillLoanType: cat.name ?? 'Unknown Category',
-                selectedCategory: cat,
+                prefillLoanType: category.name ?? 'Unknown Category',
+                selectedCategory: category,
               ),
             ),
           );
@@ -486,24 +572,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                     color: const Color(0xFF005DFF).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: cat.icon != null && cat.icon!.isNotEmpty
-                      ? Image.network(
-                          cat.icon!.startsWith('http')
-                              ? cat.icon!
-                              : cat.icon!.startsWith('uploads/')
-                                  ? AppConfig.apiBaseUrl.replaceFirst('/api', '') + '/' + cat.icon!
-                                  : kCategoryIconBaseUrl + cat.icon!,
-                          width: 52,
-                          height: 52,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Icon(Icons.category, size: 52, color: const Color(0xFF005DFF)),
-                        )
+                  child: iconUrl != null
+                      ? category.icon!.startsWith('assets/')
+                          ? Image.asset(
+                              iconUrl,
+                              width: 52,
+                              height: 52,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Icon(Icons.category, size: 52, color: const Color(0xFF005DFF)),
+                            )
+                          : Image.network(
+                              iconUrl,
+                              width: 52,
+                              height: 52,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Icon(Icons.category, size: 52, color: const Color(0xFF005DFF)),
+                            )
                       : Icon(Icons.category, size: 52, color: const Color(0xFF005DFF)),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  cat.name ?? 'Unknown Category',
+                  category.name ?? 'Unknown Category',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 12,

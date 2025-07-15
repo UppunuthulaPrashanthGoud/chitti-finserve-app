@@ -34,10 +34,26 @@ class ProfileNotifier extends StateNotifier<AsyncValue<ProfileModel?>> {
   }) async {
     try {
       final currentProfile = state.value;
-      if (currentProfile == null) return;
-      final updatedProfile = currentProfile.copyWith(
-        name: name,
-        email: email,
+      
+      // If no current profile, create a new one
+      if (currentProfile == null) {
+        final newProfile = ProfileModel(
+          name: name ?? '',
+          phone: '', // Will be set by backend
+          email: email,
+          aadharNumber: aadharNumber,
+          panNumber: panNumber,
+          aadharUpload: aadharUpload ?? '',
+          panUpload: panUpload ?? '',
+          profilePicture: profilePicture ?? '',
+        );
+        await _repository.updateProfile(newProfile);
+        state = AsyncValue.data(newProfile);
+      } else {
+        // Update existing profile
+        final updatedProfile = currentProfile.copyWith(
+          name: name,
+          email: email,
         aadharNumber: aadharNumber,
         panNumber: panNumber,
         profilePicture: profilePicture,
@@ -46,6 +62,7 @@ class ProfileNotifier extends StateNotifier<AsyncValue<ProfileModel?>> {
       );
       await _repository.updateProfile(updatedProfile);
       state = AsyncValue.data(updatedProfile);
+      }
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
     }

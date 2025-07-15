@@ -62,7 +62,7 @@ class ContactScreen extends ConsumerWidget {
                   const SizedBox(height: 32),
                   ListTile(
                     leading: const Icon(Icons.location_on, color: Color(0xFF005DFF)),
-                    title: Text(contact.officeAddress ?? 'Address not available', style: const TextStyle(fontFamily: 'Montserrat')),
+                    title: Text(contact.address ?? 'Address not available', style: const TextStyle(fontFamily: 'Montserrat')),
                   ),
                   ListTile(
                     leading: const Icon(Icons.phone, color: Color(0xFF005DFF)),
@@ -105,7 +105,7 @@ class ContactScreen extends ConsumerWidget {
                   ),
                   ListTile(
                     leading: const Icon(Icons.access_time, color: Color(0xFF005DFF)),
-                    title: Text(contact.hours ?? 'Working hours not available', style: const TextStyle(fontFamily: 'Montserrat')),
+                    title: Text(contact.workingHours ?? 'Working hours not available', style: const TextStyle(fontFamily: 'Montserrat')),
                   ),
                 ],
               ),

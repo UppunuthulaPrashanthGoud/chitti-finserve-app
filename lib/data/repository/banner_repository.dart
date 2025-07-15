@@ -1,52 +1,71 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import '../model/banner_model.dart';
+import '../../core/network_service.dart';
 
 class BannerRepository {
   static Future<BannerListModel> loadBanners() async {
     try {
-      final String response = await rootBundle.loadString('assets/json/banners.json');
-      final data = await json.decode(response);
-      final bannerList = BannerListModel.fromJson(data);
-      return bannerList;
-    } catch (e, stackTrace) {
-      // Fallback hardcoded banners
+      // Try to fetch from API first
+      final response = await NetworkService.get('/banners/active');
+      final jsonMap = NetworkService.parseResponse(response);
       
-      // Fallback hardcoded banners
-      return BannerListModel(banners: [
-        BannerModel(
-          id: 'banner1',
-          title: 'Personal Loans',
-          subtitle: 'Quick approval up to ₹25 Lakhs',
-          image: 'assets/images/banners/personal_loan_banner.jpg',
-          color: '#005DFF',
-          action: 'Apply Now',
-        ),
-        BannerModel(
-          id: 'banner2',
-          title: 'Business Loans',
-          subtitle: 'Grow your business with flexible financing',
-          image: 'assets/images/banners/business_loan_banner.jpg',
-          color: '#FF6B35',
-          action: 'Learn More',
-        ),
-        BannerModel(
-          id: 'banner3',
-          title: 'Home Loans',
-          subtitle: 'Make your dream home a reality',
-          image: 'assets/images/banners/home_loan_banner.jpg',
-          color: '#4CAF50',
-          action: 'Calculate EMI',
-        ),
-        BannerModel(
-          id: 'banner4',
-          title: 'Car Loans',
-          subtitle: 'Drive your dream car today',
-          image: 'assets/images/banners/car_loan_banner.jpg',
-          color: '#9C27B0',
-          action: 'Get Quote',
-        ),
-      ]);
+      // Filter only active banners
+      final activeBanners = (jsonMap['data'] as List)
+          .where((banner) => banner['isActive'] == true)
+          .toList();
+      
+      return BannerListModel.fromJson({
+        'data': activeBanners,
+        'pagination': jsonMap['pagination'],
+      });
+    } catch (e) {
+      // Fallback to local JSON if API fails
+      try {
+        final String response = await rootBundle.loadString('assets/json/banners.json');
+        final data = await json.decode(response);
+        return BannerListModel.fromJson(data);
+      } catch (localError) {
+        // Final fallback to hardcoded banners
+        return BannerListModel(data: [
+          BannerModel(
+            id: 'banner1',
+            title: 'Personal Loans',
+            description: 'Quick approval up to ₹25 Lakhs',
+            image: 'assets/images/banners/personal_loan_banner.jpg',
+            link: '#',
+            sortOrder: 1,
+            isActive: true,
+          ),
+          BannerModel(
+            id: 'banner2',
+            title: 'Business Loans',
+            description: 'Grow your business with flexible financing',
+            image: 'assets/images/banners/business_loan_banner.jpg',
+            link: '#',
+            sortOrder: 2,
+            isActive: true,
+          ),
+          BannerModel(
+            id: 'banner3',
+            title: 'Home Loans',
+            description: 'Make your dream home a reality',
+            image: 'assets/images/banners/home_loan_banner.jpg',
+            link: '#',
+            sortOrder: 3,
+            isActive: true,
+          ),
+          BannerModel(
+            id: 'banner4',
+            title: 'Car Loans',
+            description: 'Drive your dream car today',
+            image: 'assets/images/banners/car_loan_banner.jpg',
+            link: '#',
+            sortOrder: 4,
+            isActive: true,
+          ),
+        ]);
+      }
     }
   }
 } 

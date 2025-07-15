@@ -75,42 +75,42 @@ class _PrivacyPolicyScreenState extends ConsumerState<PrivacyPolicyScreen> with 
                         children: [
                           _buildSection(
                             '1. Information We Collect',
-                            'We collect the following types of information:\n\n• Personal Information: Name, email, phone number, address\n• Financial Information: Income, loan amount, purpose\n• Identity Documents: Aadhar, PAN, and other KYC documents\n• Device Information: Device type, operating system, app version\n• Usage Data: App interactions, features used, time spent',
+                            'We collect the following types of information:\n\n• Personal Information: Name, email, phone number, address, date of birth\n• Financial Information: Income, loan amount, purpose, employment details\n• Identity Documents: Aadhar, PAN, and other KYC documents\n• Device Information: Device type, operating system, app version, IP address\n• Usage Data: App interactions, features used, time spent, loan applications\n• Location Data: General location for loan processing (with consent)',
                           ),
                           
                           _buildSection(
                             '2. How We Use Your Information',
-                            'We use your information to:\n\n• Process loan applications and connect you with lenders\n• Verify your identity and eligibility\n• Provide customer support and improve our services\n• Send important updates and notifications\n• Comply with legal and regulatory requirements\n• Prevent fraud and ensure security',
+                            'We use your information to:\n\n• Process loan applications and connect you with lenders\n• Verify your identity and eligibility for loans\n• Provide customer support and improve our services\n• Send important updates and notifications\n• Comply with legal and regulatory requirements (RBI, KYC norms)\n• Prevent fraud and ensure security\n• Analyze app usage to improve user experience\n• Generate leads for financial institutions',
                           ),
                           
                           _buildSection(
                             '3. Information Sharing',
-                            'We may share your information with:\n\n• Financial institutions and lenders for loan processing\n• Service providers who assist in our operations\n• Legal authorities when required by law\n• Third-party verification services for KYC\n\nWe do not sell your personal information to third parties.',
+                            'We may share your information with:\n\n• Financial institutions and lenders for loan processing\n• KYC verification service providers\n• Payment gateways and banking partners\n• Legal authorities when required by law\n• Third-party verification services for identity verification\n• Analytics and security service providers\n\nWe do not sell your personal information to third parties. All sharing is done under strict confidentiality agreements.',
                           ),
                           
                           _buildSection(
                             '4. Data Security',
-                            'We implement industry-standard security measures:\n\n• Encryption of data in transit and at rest\n• Secure servers and data centers\n• Regular security audits and updates\n• Access controls and authentication\n• Employee training on data protection',
+                            'We implement industry-standard security measures:\n\n• AES-256 encryption for data at rest\n• TLS 1.3 encryption for data in transit\n• Secure servers with 24/7 monitoring\n• Regular security audits and penetration testing\n• Access controls and multi-factor authentication\n• Employee training on data protection\n• Compliance with RBI security guidelines',
                           ),
                           
                           _buildSection(
                             '5. Data Retention',
-                            'We retain your information for:\n\n• Active accounts: Duration of account plus 7 years\n• Inactive accounts: 3 years after last activity\n• Legal requirements: As required by applicable laws\n• You may request deletion of your data',
+                            'We retain your information for:\n\n• Active accounts: Duration of account plus 7 years (as per RBI guidelines)\n• Inactive accounts: 3 years after last activity\n• KYC documents: 7 years as per regulatory requirements\n• Legal requirements: As required by applicable laws\n• You may request deletion of your data (subject to legal requirements)',
                           ),
                           
                           _buildSection(
                             '6. Your Rights',
-                            'You have the right to:\n\n• Access your personal information\n• Correct inaccurate information\n• Delete your account and data\n• Opt-out of marketing communications\n• Request data portability\n• Lodge complaints with authorities',
+                            'You have the right to:\n\n• Access your personal information\n• Correct inaccurate information\n• Delete your account and data (subject to legal requirements)\n• Opt-out of marketing communications\n• Request data portability\n• Lodge complaints with authorities\n• Withdraw consent for data processing\n• Know what data we collect and how we use it',
                           ),
                           
                           _buildSection(
                             '7. Cookies and Tracking',
-                            'We use cookies and similar technologies to:\n\n• Remember your preferences\n• Analyze app usage and performance\n• Provide personalized experiences\n• Ensure security and prevent fraud\n\nYou can control cookie settings in your device.',
+                            'We use cookies and similar technologies to:\n\n• Remember your preferences and login status\n• Analyze app usage and performance\n• Provide personalized experiences\n• Ensure security and prevent fraud\n• Improve app functionality\n\nYou can control cookie settings in your device. We do not use tracking for advertising purposes.',
                           ),
                           
                           _buildSection(
                             '8. Third-Party Services',
-                            'Our app may integrate with:\n\n• Payment gateways for transactions\n• SMS services for verification\n• Analytics services for app improvement\n• Cloud storage for data backup\n\nThese services have their own privacy policies.',
+                            'Our app integrates with:\n\n• Payment gateways for loan processing\n• SMS services for OTP verification\n• Analytics services for app improvement\n• Cloud storage for secure data backup\n• KYC verification services\n• Banking and financial service APIs\n\nThese services have their own privacy policies and security measures.',
                           ),
                           
                           _buildSection(
@@ -120,30 +120,74 @@ class _PrivacyPolicyScreenState extends ConsumerState<PrivacyPolicyScreen> with 
                           
                           _buildSection(
                             '10. International Transfers',
-                            'Your information may be transferred to and processed in countries other than your own. We ensure appropriate safeguards are in place to protect your data during international transfers.',
+                            'Your information may be processed in India and other countries where our service providers are located. We ensure appropriate safeguards are in place to protect your data during international transfers, including:\n\n• Standard contractual clauses\n• Adequacy decisions\n• Other appropriate safeguards',
                           ),
                           
                           _buildSection(
                             '11. Changes to Privacy Policy',
-                            'We may update this Privacy Policy from time to time. We will notify you of any material changes through the app or email. Continued use of the app after changes constitutes acceptance of the new policy.',
+                            'We may update this Privacy Policy from time to time. We will notify you of any material changes through:\n\n• In-app notifications\n• Email notifications\n• Updated policy in the app\n\nContinued use of the app after changes constitutes acceptance of the new policy.',
                           ),
                           
                           _buildSection(
                             '12. California Privacy Rights (CCPA)',
-                            'California residents have additional rights:\n\n• Right to know what personal information is collected\n• Right to delete personal information\n• Right to opt-out of sale of personal information\n• Right to non-discrimination for exercising rights',
+                            'California residents have additional rights:\n\n• Right to know what personal information is collected\n• Right to delete personal information\n• Right to opt-out of sale of personal information\n• Right to non-discrimination for exercising rights\n• Right to data portability\n\nWe do not sell personal information to third parties.',
                           ),
                           
                           _buildSection(
                             '13. European Privacy Rights (GDPR)',
-                            'EU residents have additional rights:\n\n• Right to erasure ("right to be forgotten")\n• Right to data portability\n• Right to object to processing\n• Right to restrict processing\n• Right to lodge complaints with supervisory authorities',
+                            'EU residents have additional rights:\n\n• Right to erasure ("right to be forgotten")\n• Right to data portability\n• Right to object to processing\n• Right to restrict processing\n• Right to lodge complaints with supervisory authorities\n• Right to withdraw consent',
                           ),
                           
                           _buildSection(
-                            '14. Contact Us',
-                            'For privacy-related questions or requests:\n\nEmail: privacy@chittifinserve.com\nPhone: +91-XXXXXXXXXX\nAddress: [Your Company Address]\n\nData Protection Officer: dpo@chittifinserve.com',
+                            '14. Indian Privacy Rights (PDPB)',
+                            'Indian residents have rights under the Personal Data Protection Bill:\n\n• Right to confirmation and access\n• Right to correction and completion\n• Right to erasure\n• Right to data portability\n• Right to restrict processing\n• Right to object to processing',
+                          ),
+                          
+                          _buildSection(
+                            '15. Contact Us',
+                            'For privacy-related questions or requests:\n\nEmail: privacy@chittifinserve.com\nPhone: +91-XXXXXXXXXX\nAddress: [Your Company Address]\n\nData Protection Officer: dpo@chittifinserve.com\n\nResponse Time: We will respond to your requests within 30 days.',
                           ),
                           
                           const SizedBox(height: 32),
+                          
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.green[50],
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.green[200]!),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.security, color: Colors.green[600]),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Privacy Commitment',
+                                      style: TextStyle(
+                                        color: Colors.green[700],
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'Montserrat',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'We are committed to protecting your privacy and personal information. Your data is encrypted, secure, and never shared without your consent. We comply with all applicable privacy laws and regulations.',
+                                  style: TextStyle(
+                                    color: Colors.green[700],
+                                    fontFamily: 'Montserrat',
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          
+                          const SizedBox(height: 16),
                           
                           Container(
                             padding: const EdgeInsets.all(16),

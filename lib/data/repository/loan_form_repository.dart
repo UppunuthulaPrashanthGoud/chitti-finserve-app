@@ -1,14 +1,13 @@
 import 'dart:convert';
 import '../../core/network_service.dart';
+import '../../core/app_config.dart';
 import '../model/loan_form_model.dart';
 import '../model/category_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoanFormRepository {
   // Dynamic category mapping - will be populated from API
-  Map<String, String> _categoryMapping = {};
-
-
+  final Map<String, String> _categoryMapping = {};
 
   Future<List<CategoryModel>> fetchCategories() async {
     try {
@@ -23,29 +22,39 @@ class LoanFormRepository {
 
   Future<LoanFormModel> fetchLoanFormConfig() async {
     try {
-      print('🔧 LoanFormRepository Debug: Fetching loan form configuration...');
+      if (AppConfig.enableLogging) {
+        print('🔧 LoanFormRepository Debug: Fetching loan form configuration...');
+      }
       final response = await NetworkService.get('/configuration/public');
       final data = NetworkService.parseResponse(response);
       
-      print('🔧 LoanFormRepository Debug: Full response structure:');
-      print('Available keys: ${data.keys.toList()}');
+      if (AppConfig.enableLogging) {
+        print('🔧 LoanFormRepository Debug: Full response structure:');
+        print('Available keys: ${data.keys.toList()}');
+      }
       
       // Check if loanForm exists in the response
       if (data['data'] != null && data['data']['loanForm'] != null) {
-        print('✅ LoanFormRepository Debug: Found loanForm in data.loanForm');
+        if (AppConfig.enableLogging) {
+          print('✅ LoanFormRepository Debug: Found loanForm in data.loanForm');
+        }
         final loanFormConfig = LoanFormModel.fromJson(data['data']['loanForm']);
         
         // Fetch categories and update the form configuration
         try {
           final categories = await fetchCategories();
-          print('🔧 LoanFormRepository Debug: Fetched ${categories.length} categories');
+          if (AppConfig.enableLogging) {
+            print('🔧 LoanFormRepository Debug: Fetched ${categories.length} categories');
+          }
           
           // Populate category mapping
           _categoryMapping.clear();
           for (final category in categories) {
             _categoryMapping[category.name] = category.id;
           }
-          print('🔧 LoanFormRepository Debug: Updated category mapping: $_categoryMapping');
+          if (AppConfig.enableLogging) {
+            print('🔧 LoanFormRepository Debug: Updated category mapping: $_categoryMapping');
+          }
           
           // Update the category field options with dynamic categories
           final updatedFields = loanFormConfig.fields?.map((field) {
@@ -79,19 +88,27 @@ class LoanFormRepository {
             isActive: loanFormConfig.isActive,
           );
         } catch (e) {
-          print('⚠️ LoanFormRepository Debug: Failed to fetch categories, using static options: $e');
+          if (AppConfig.enableLogging) {
+            print('⚠️ LoanFormRepository Debug: Failed to fetch categories, using static options: $e');
+          }
           return loanFormConfig;
         }
       } else if (data['loanForm'] != null) {
-        print('✅ LoanFormRepository Debug: Found loanForm in response');
+        if (AppConfig.enableLogging) {
+          print('✅ LoanFormRepository Debug: Found loanForm in response');
+        }
         return LoanFormModel.fromJson(data['loanForm']);
       } else {
-        print('❌ LoanFormRepository Debug: loanForm not found in response');
-        print('Response structure: ${JsonEncoder.withIndent('  ').convert(data)}');
+        if (AppConfig.enableLogging) {
+          print('❌ LoanFormRepository Debug: loanForm not found in response');
+          print('Response structure: ${JsonEncoder.withIndent('  ').convert(data)}');
+        }
         throw Exception('Loan form configuration not found');
       }
     } catch (e) {
-      print('❌ LoanFormRepository Debug: Error fetching config: $e');
+      if (AppConfig.enableLogging) {
+        print('❌ LoanFormRepository Debug: Error fetching config: $e');
+      }
       throw Exception('Failed to fetch loan form configuration: $e');
     }
   }
@@ -112,11 +129,15 @@ class LoanFormRepository {
 
   Future<Map<String, dynamic>> submitLoanApplication(Map<String, dynamic> formData) async {
     try {
-      print('🔧 LoanFormRepository Debug: Submitting loan application');
-      print('Form data: ${JsonEncoder.withIndent('  ').convert(formData)}');
+      if (AppConfig.enableLogging) {
+        print('🔧 LoanFormRepository Debug: Submitting loan application');
+        print('Form data: ${JsonEncoder.withIndent('  ').convert(formData)}');
+      }
       
       final token = await _getAuthToken();
-      print('🔧 LoanFormRepository Debug: Auth token: ${token != null ? 'Found' : 'Not found'}');
+      if (AppConfig.enableLogging) {
+        print('🔧 LoanFormRepository Debug: Auth token: ${token != null ? 'Found' : 'Not found'}');
+      }
       if (token == null) {
         throw Exception('No authentication token found');
       }
@@ -127,9 +148,13 @@ class LoanFormRepository {
         final categoryId = _categoryMapping[categoryName];
         if (categoryId != null) {
           formData['category'] = categoryId;
-          print('🔧 LoanFormRepository Debug: Mapped category "$categoryName" to ID "$categoryId"');
+          if (AppConfig.enableLogging) {
+            print('🔧 LoanFormRepository Debug: Mapped category "$categoryName" to ID "$categoryId"');
+          }
         } else {
-          print('⚠️ LoanFormRepository Debug: Category "$categoryName" not found in mapping, using first available category');
+          if (AppConfig.enableLogging) {
+            print('⚠️ LoanFormRepository Debug: Category "$categoryName" not found in mapping, using first available category');
+          }
           // Use first available category ID if mapping not found
           if (_categoryMapping.isNotEmpty) {
             formData['category'] = _categoryMapping.values.first;
@@ -140,23 +165,31 @@ class LoanFormRepository {
         }
       }
 
-      print('🔧 LoanFormRepository Debug: Making API call to /loan-applications');
+      if (AppConfig.enableLogging) {
+        print('🔧 LoanFormRepository Debug: Making API call to /loan-applications');
+      }
       final response = await NetworkService.post(
         '/loan-applications',
         body: formData,
         token: token,
       );
       
-      print('🔧 LoanFormRepository Debug: Response status: ${response.statusCode}');
-      print('🔧 LoanFormRepository Debug: Response body: ${response.body}');
+      if (AppConfig.enableLogging) {
+        print('🔧 LoanFormRepository Debug: Response status: ${response.statusCode}');
+        print('🔧 LoanFormRepository Debug: Response body: ${response.body}');
+      }
       
       final responseData = NetworkService.parseResponse(response);
-      print('🔧 LoanFormRepository Debug: Parsed response:');
-      print('${JsonEncoder.withIndent('  ').convert(responseData)}');
+      if (AppConfig.enableLogging) {
+        print('🔧 LoanFormRepository Debug: Parsed response:');
+        print('${JsonEncoder.withIndent('  ').convert(responseData)}');
+      }
       
       return responseData;
     } catch (e) {
-      print('❌ LoanFormRepository Debug: Error submitting application: $e');
+      if (AppConfig.enableLogging) {
+        print('❌ LoanFormRepository Debug: Error submitting application: $e');
+      }
       
       // If it's an ApiException with validation errors, extract the messages
       if (e is ApiException && e.data != null && e.data!['errors'] != null) {

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:animated_text_kit/animated_text_kit.dart';
 import 'loan_form_provider.dart';
 import '../../data/model/loan_form_model.dart';
 import '../../data/model/category_model.dart';
@@ -8,13 +7,13 @@ import '../profile/profile_provider.dart';
 import '../user/user_provider.dart';
 import '../legal/terms_conditions_screen.dart';
 import '../legal/privacy_policy_screen.dart';
-import '../applied_loans/applied_loans_screen.dart';
-import 'dart:convert'; // Added for json.decode
-import 'package:http/http.dart' as http; // Added for http.MultipartRequest
-import '../../core/network_service.dart'; // Added for NetworkService
-import '../../core/validation_helper.dart'; // Added for ValidationHelper
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../../core/network_service.dart';
+import '../../core/validation_helper.dart';
 import 'success_screen.dart';
 import '../../core/app_config.dart';
+import '../../core/image_utils.dart';
 
 class LoanFormScreen extends ConsumerStatefulWidget {
   final String? prefillMobile;
@@ -34,11 +33,9 @@ class LoanFormScreen extends ConsumerStatefulWidget {
 class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
   final Map<String, TextEditingController> _controllers = {};
   final Map<String, String?> _dropdownValues = {};
-  final Map<String, String?> _filePaths = {};
   String? aadharDocPath;
   String? panDocPath;
   bool _loading = false;
-  String? _error;
   bool _submitted = false;
   bool _acceptedTerms = false;
   bool _hasPrefilled = false; // Add flag to prevent multiple prefill calls
@@ -46,7 +43,6 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
   @override
   void initState() {
     super.initState();
-    _error = null;
     _loading = false;
     _submitted = false;
     _hasPrefilled = false;
@@ -157,34 +153,6 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
     }
   }
 
-  Future<String?> _uploadDocument(String fieldId, String? filePath) async {
-    if (filePath == null || filePath.isEmpty) return null;
-    final uri = Uri.parse('${NetworkService.baseUrl}/upload/document');
-    final request = http.MultipartRequest('POST', uri);
-    
-    // Determine the correct field name based on fieldId
-    String fieldName = 'document';
-    if (fieldId == 'aadharUpload') {
-      fieldName = 'aadharCard';
-    } else if (fieldId == 'panUpload') {
-      fieldName = 'panCard';
-    }
-    
-    request.files.add(await http.MultipartFile.fromPath(fieldName, filePath));
-    // Add auth token if needed
-    final token = await ref.read(userRepositoryProvider).getAuthToken();
-    if (token != null) {
-      request.headers['Authorization'] = 'Bearer $token';
-    }
-    final response = await request.send();
-    if (response.statusCode == 200) {
-      final respStr = await response.stream.bytesToString();
-      final respJson = json.decode(respStr);
-      return respJson['data']?['path'];
-    }
-    return null;
-  }
-
   void _submit(LoanFormModel config) async {
     // Check if terms and conditions are accepted
     if (!_acceptedTerms) {
@@ -288,8 +256,10 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
       }
       
       // Debug: Print final form data
-      print('🔧 Mobile App Debug: Final form data:');
-      print('${JsonEncoder.withIndent('  ').convert(formData)}');
+      if (AppConfig.enableLogging) {
+        print('🔧 Mobile App Debug: Final form data:');
+        print('${JsonEncoder.withIndent('  ').convert(formData)}');
+      }
       
       // Validate required fields for backend
       final List<String> missingFields = [];
@@ -331,7 +301,9 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
       }
       
       if (missingFields.isNotEmpty) {
-        print('❌ Mobile App Debug: Missing required fields: $missingFields');
+        if (AppConfig.enableLogging) {
+          print('❌ Mobile App Debug: Missing required fields: $missingFields');
+        }
         setState(() {
           _loading = false;
         });
@@ -349,7 +321,9 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
         return;
       }
       
-      print('🔧 Mobile App Debug: User is authenticated, proceeding with submission');
+      if (AppConfig.enableLogging) {
+        print('🔧 Mobile App Debug: User is authenticated, proceeding with submission');
+      }
       
       // Submit the application
       await ref.read(loanFormRepositoryProvider).submitLoanApplication(formData);
@@ -477,18 +451,23 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: widget.selectedCategory!.icon != null && widget.selectedCategory!.icon!.isNotEmpty
-                                    ? Image.network(
-                                        widget.selectedCategory!.icon!.startsWith('http')
-                                            ? widget.selectedCategory!.icon!
-                                            : widget.selectedCategory!.icon!.startsWith('uploads/')
-                                                ? AppConfig.apiBaseUrl.replaceFirst('/api', '') + '/' + widget.selectedCategory!.icon!
-                                                : AppConfig.apiBaseUrl.replaceFirst('/api', '') + '/uploads/' + widget.selectedCategory!.icon!,
-                                        width: 36,
-                                        height: 36,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) =>
-                                            Icon(Icons.category, size: 36, color: const Color(0xFF005DFF)),
-                                      )
+                                    ? widget.selectedCategory!.icon!.startsWith('assets/')
+                                        ? Image.asset(
+                                            widget.selectedCategory!.icon!,
+                                            width: 36,
+                                            height: 36,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) =>
+                                                Icon(Icons.category, size: 36, color: const Color(0xFF005DFF)),
+                                          )
+                                        : Image.network(
+                                            ImageUtils.getImageUrl(widget.selectedCategory!.icon),
+                                            width: 36,
+                                            height: 36,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) =>
+                                                Icon(Icons.category, size: 36, color: const Color(0xFF005DFF)),
+                                          )
                                     : Icon(Icons.category, size: 36, color: const Color(0xFF005DFF)),
                               ),
                               const SizedBox(width: 12),

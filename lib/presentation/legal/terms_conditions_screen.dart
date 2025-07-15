@@ -80,70 +80,119 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> w
                           
                           _buildSection(
                             '2. App Description',
-                            'The App is a loan lead generation platform that connects users with financial institutions and lenders. We facilitate the process of loan applications but do not directly provide loans.',
+                            'The App is a loan lead generation platform that connects users with financial institutions and lenders. We facilitate the process of loan applications but do not directly provide loans, financial advice, or guarantee loan approvals.',
                           ),
                           
                           _buildSection(
                             '3. User Eligibility',
-                            'You must be at least 18 years old and legally competent to use this App. You must provide accurate and complete information when using our services.',
+                            'You must be at least 18 years old and legally competent to use this App. You must provide accurate and complete information when using our services. The App is intended for Indian residents only.',
                           ),
                           
                           _buildSection(
                             '4. User Responsibilities',
-                            '• Provide accurate and truthful information\n• Maintain the security of your account\n• Comply with all applicable laws\n• Not use the App for illegal purposes\n• Not attempt to gain unauthorized access',
+                            '• Provide accurate and truthful information\n• Maintain the security of your account\n• Comply with all applicable laws and regulations\n• Not use the App for illegal purposes\n• Not attempt to gain unauthorized access\n• Not submit false or misleading information\n• Not use the App for money laundering or fraud',
                           ),
                           
                           _buildSection(
                             '5. Privacy and Data Protection',
-                            'Your privacy is important to us. Please review our Privacy Policy to understand how we collect, use, and protect your personal information.',
+                            'Your privacy is important to us. We collect, use, and protect your personal information as described in our Privacy Policy. By using the App, you consent to our data practices.',
                           ),
                           
                           _buildSection(
-                            '6. Financial Information',
-                            'The App may collect financial information for loan processing. We implement industry-standard security measures to protect your financial data.',
+                            '6. Financial Information and KYC',
+                            'The App may collect financial information and KYC documents (Aadhar, PAN) for loan processing. We implement industry-standard security measures to protect your financial data. All data is encrypted and stored securely.',
                           ),
                           
                           _buildSection(
-                            '7. Third-Party Services',
-                            'The App may integrate with third-party services for loan processing, verification, and other services. We are not responsible for the privacy practices of third-party services.',
+                            '7. Lead Generation Process',
+                            '• We collect your loan requirements and personal information\n• We share this information with authorized lenders and financial institutions\n• Lenders may contact you directly for loan processing\n• We do not guarantee loan approval or specific terms\n• Loan terms and conditions are determined by the lenders',
                           ),
                           
                           _buildSection(
-                            '8. Intellectual Property',
+                            '8. Third-Party Services',
+                            'The App integrates with third-party services for loan processing, verification, and other services. We are not responsible for the privacy practices, terms, or services of third-party providers.',
+                          ),
+                          
+                          _buildSection(
+                            '9. Intellectual Property',
                             'All content, features, and functionality of the App are owned by Chitti Finserve and are protected by copyright, trademark, and other intellectual property laws.',
                           ),
                           
                           _buildSection(
-                            '9. Limitation of Liability',
-                            'Chitti Finserve shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the App.',
+                            '10. Limitation of Liability',
+                            'Chitti Finserve shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the App. Our liability is limited to the amount paid by you for the App.',
                           ),
                           
                           _buildSection(
-                            '10. Disclaimers',
-                            '• The App is provided "as is" without warranties\n• We do not guarantee loan approval\n• Loan terms are subject to lender discretion\n• Interest rates and fees vary by lender',
+                            '11. Disclaimers',
+                            '• The App is provided "as is" without warranties\n• We do not guarantee loan approval or specific loan terms\n• Loan terms are subject to lender discretion and approval\n• Interest rates, fees, and terms vary by lender\n• We are not a financial advisor or lender\n• Past performance does not guarantee future results',
                           ),
                           
                           _buildSection(
-                            '11. Termination',
-                            'We may terminate or suspend your access to the App at any time, with or without cause, with or without notice.',
+                            '12. Prohibited Activities',
+                            'You agree not to:\n• Submit false or misleading information\n• Use the App for illegal activities\n• Attempt to access other users\' accounts\n• Interfere with the App\'s functionality\n• Use automated systems to access the App\n• Share your account credentials with others',
                           ),
                           
                           _buildSection(
-                            '12. Governing Law',
-                            'These Terms and Conditions are governed by the laws of India. Any disputes shall be resolved in the courts of India.',
+                            '13. Termination',
+                            'We may terminate or suspend your access to the App at any time, with or without cause, with or without notice. You may also terminate your account at any time.',
                           ),
                           
                           _buildSection(
-                            '13. Changes to Terms',
-                            'We reserve the right to modify these terms at any time. Continued use of the App after changes constitutes acceptance of the new terms.',
+                            '14. Governing Law',
+                            'These Terms and Conditions are governed by the laws of India. Any disputes shall be resolved in the courts of India, with Mumbai courts having exclusive jurisdiction.',
                           ),
                           
                           _buildSection(
-                            '14. Contact Information',
-                            'For questions about these Terms and Conditions, please contact us at:\nEmail: support@chittifinserve.com\nPhone: +91-XXXXXXXXXX',
+                            '15. Changes to Terms',
+                            'We reserve the right to modify these terms at any time. We will notify you of any material changes through the app or email. Continued use of the App after changes constitutes acceptance of the new terms.',
+                          ),
+                          
+                          _buildSection(
+                            '16. Contact Information',
+                            'For questions about these Terms and Conditions, please contact us at:\nEmail: support@chittifinserve.com\nPhone: +91-XXXXXXXXXX\nAddress: [Your Company Address]',
                           ),
                           
                           const SizedBox(height: 32),
+                          
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.blue[200]!),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.info_outline, color: Colors.blue[600]),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Important Notice',
+                                      style: TextStyle(
+                                        color: Colors.blue[700],
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'Montserrat',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'This app is for loan lead generation only. We do not provide loans directly. All loan approvals, terms, and conditions are subject to lender discretion. Please read all loan documents carefully before signing.',
+                                  style: TextStyle(
+                                    color: Colors.blue[700],
+                                    fontFamily: 'Montserrat',
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          
+                          const SizedBox(height: 16),
                           
                           Container(
                             padding: const EdgeInsets.all(16),

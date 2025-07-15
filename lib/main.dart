@@ -10,6 +10,7 @@ import 'presentation/contact/contact_screen.dart';
 import 'presentation/applied_loans/applied_loans_screen.dart';
 import 'presentation/profile/profile_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   // Print debug information
@@ -51,21 +52,32 @@ class _SplashRouterScreenState extends State<SplashRouterScreen> {
   }
 
   Future<void> _checkAutoLogin() async {
-    // TODO: Replace with real secure storage/session logic later
-    await Future.delayed(const Duration(milliseconds: 500));
-    setState(() {
-      _autoLogin = false; // Simulate not logged in for now
-    });
+    try {
+      // Check if user has a valid auth token
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      setState(() {
+        // If token exists and is not empty, user is logged in
+        _autoLogin = token != null && token.isNotEmpty;
+      });
+    } catch (e) {
+      setState(() {
+        _autoLogin = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_autoLogin == null) {
-      return SplashScreen();
+      return const SplashScreen();
     } else if (_autoLogin == true) {
-      return MainNavScreen();
+      return const MainNavScreen();
     } else {
-      return LoginScreen();
+      return const LoginScreen();
     }
   }
 }
@@ -92,14 +104,6 @@ class _MainNavScreenState extends State<MainNavScreen> {
     ReferralScreen(),
     ContactScreen(),
     ProfileScreen(),
-  ];
-  final List<String> _titles = const [
-    'Home',
-    'My Applications',
-    'EMI Calculator',
-    'Referral',
-    'Contact Us',
-    'Profile',
   ];
 
   @override

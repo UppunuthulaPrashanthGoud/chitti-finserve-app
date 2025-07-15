@@ -6,4 +6,10 @@
         <domain includeSubdomains="true">192.168.1.100</domain>
         <domain includeSubdomains="true">127.0.0.1</domain>
     </domain-config>
+    
+    <!-- Allow HTTPS traffic for production domains -->
+    <domain-config>
+        <domain includeSubdomains="true">api.chittifinserv.com</domain>
+        <domain includeSubdomains="true">chittifinserv.com</domain>
+    </domain-config>
 </network-security-config> 

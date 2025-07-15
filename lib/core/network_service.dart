@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart';
 import 'app_config.dart';
 
 class NetworkService {
@@ -75,6 +74,13 @@ class NetworkService {
 
     if (token != null) {
       defaultHeaders['Authorization'] = 'Bearer $token';
+      if (AppConfig.enableLogging) {
+        print('🔐 NetworkService: Adding Authorization header with token');
+      }
+    } else {
+      if (AppConfig.enableLogging) {
+        print('⚠️ NetworkService: No token provided for request');
+      }
     }
 
     if (headers != null) {
@@ -118,7 +124,7 @@ class NetworkService {
         if (response.statusCode >= 500) {
           retryCount++;
           if (AppConfig.enableLogging) {
-            print('🔄 NetworkService: Server error, retrying... (${retryCount}/${maxRetries})');
+            print('🔄 NetworkService: Server error, retrying... ($retryCount/$maxRetries)');
           }
           if (retryCount < maxRetries) {
             await Future.delayed(Duration(seconds: retryCount * 2));
@@ -132,7 +138,7 @@ class NetworkService {
         
         if (AppConfig.enableLogging) {
           print('❌ NetworkService: Error occurred - $e');
-          print('🔄 NetworkService: Retrying... (${retryCount}/${maxRetries})');
+          print('🔄 NetworkService: Retrying... ($retryCount/$maxRetries)');
         }
         
         // If it's a network error, retry
@@ -184,8 +190,6 @@ class NetworkService {
       );
     }
   }
-
-
 }
 
 class ApiException implements Exception {
@@ -200,5 +204,5 @@ class ApiException implements Exception {
   });
 
   @override
-  String toString() => message; // Return only the message without prefix
+  String toString() => message;
 } 

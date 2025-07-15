@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:animated_text_kit/animated_text_kit.dart';
 import 'dart:async';
 import 'login_provider.dart';
 import '../../main.dart';
 import '../../data/model/login_model.dart';
-import '../../data/repository/config_repository.dart';
-import '../../core/network_service.dart';
+import '../profile/profile_completion_screen.dart';
+import '../profile/profile_provider.dart';
+import '../../core/app_config.dart';
+import '../../core/image_utils.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -155,13 +156,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
     try {
       final loginState = ref.read(loginStateProvider.notifier);
       await loginState.verifyOTP(_mobileController.text, _otpController.text);
+
+      // After OTP verification, fetch profile
+      final profileNotifier = ref.read(profileProvider.notifier);
+      await profileNotifier.loadProfile();
+      final profile = ref.read(profileProvider).value;
       
       setState(() {
         _loading = false;
-        _loggedIn = true;
       });
-      
-      // Navigate to MainNavScreen after login
+
+      // Check for temporary email and name
+      final email = profile?.email?.trim().toLowerCase() ?? '';
+      final name = profile?.name?.trim() ?? '';
+
+      final isTempEmail = email.isEmpty ||
+          (email.startsWith('temp_') && email.endsWith('@chittifinserv.com'));
+      final isTempName = name.isEmpty || name == 'Temporary User';
+
+      final needsProfileCompletion = isTempEmail || isTempName;
+
+      if (needsProfileCompletion) {
+        // Incomplete or temporary profile - navigate to profile completion
+        Future.microtask(() {
+          Navigator.of(context).pushReplacement(
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) => ProfileCompletionScreen(
+                mobileNumber: _mobileController.text,
+              ),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              transitionDuration: const Duration(milliseconds: 800),
+            ),
+          );
+        });
+      } else {
+        // Complete profile - navigate to home screen
       Future.microtask(() {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
@@ -173,6 +204,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
           ),
         );
       });
+      }
     } catch (e) {
       setState(() {
         _loading = false;
@@ -185,10 +217,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
   Widget build(BuildContext context) {
     final loginAsync = ref.watch(loginConfigProvider);
     final appConfigAsync = ref.watch(appConfigProvider);
-    final loginState = ref.watch(loginStateProvider);
     
     return Scaffold(
-      body: Container(
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : Container(
         width: double.infinity,
         height: double.infinity,
         decoration: const BoxDecoration(
@@ -201,14 +234,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
         child: SafeArea(
           child: loginAsync.when(
             data: (config) {
-              if (_loggedIn) {
-                return _buildSuccessCard(config);
-              }
-              
               return appConfigAsync.when(
                 data: (appConfig) {
-
-                  
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -224,11 +251,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: Image.network(
-                              'http://localhost:5000/${appConfig.splash['logo']}',
+                              ImageUtils.getImageUrl(appConfig.splash['logo']),
                               fit: BoxFit.contain,
                               headers: {
                                 'Accept': 'image/*',
                                 'User-Agent': 'Flutter/1.0',
+                                'Cache-Control': 'no-cache',
                               },
                               loadingBuilder: (context, child, loadingProgress) {
                                 if (loadingProgress == null) return child;
@@ -247,6 +275,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                 );
                               },
                               errorBuilder: (context, error, stackTrace) {
+                                print('🔧 Login Logo Error:');
+                                print('   URL: ${ImageUtils.getImageUrl(appConfig.splash['logo'])}');
+                                print('   Error: $error');
+                                print('   Stack: $stackTrace');
                                 return Container(
                                   height: 120,
                                   width: 120,
@@ -374,7 +406,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                           fontFamily: 'Montserrat',
                         ),
                       ),
-
                     ],
                   ),
                 ),
@@ -408,21 +439,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                config.title ?? 'Login',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Montserrat',
-                ),
-              ),
-              const SizedBox(height: 32),
-              
-              // Error display
+              // Error message
               if (_error != null)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
                     color: Colors.red[50],
                     borderRadius: BorderRadius.circular(8),
@@ -435,40 +457,66 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                       fontSize: 14,
                       fontFamily: 'Montserrat',
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               if (_error != null) const SizedBox(height: 16),
               
+              // Mobile number input
               TextField(
                 controller: _mobileController,
-                keyboardType: TextInputType.phone,
                 enabled: !_otpSent,
+                keyboardType: TextInputType.phone,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Montserrat',
+                ),
                 decoration: InputDecoration(
                   labelText: config.mobileLabel ?? 'Mobile Number',
+                  hintText: 'Enter your mobile number',
+                  prefixIcon: const Icon(Icons.phone),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  prefixIcon: const Icon(Icons.phone),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF005DFF), width: 2),
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
-              
+
+              // OTP input (shown after OTP is sent)
               if (_otpSent) ...[
+                const SizedBox(height: 16),
                 TextField(
                   controller: _otpController,
                   keyboardType: TextInputType.number,
-                  maxLength: config.otpLength ?? 6,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Montserrat',
+                  ),
                   decoration: InputDecoration(
-                    labelText: config.otpLabel ?? 'Enter OTP',
+                    labelText: config.otpLabel ?? 'OTP',
+                    hintText: 'Enter OTP',
+                    prefixIcon: const Icon(Icons.lock),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    prefixIcon: const Icon(Icons.lock),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFF005DFF), width: 2),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                
-                // Resend timer
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -476,39 +524,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                       'Didn\'t receive OTP? ',
                       style: TextStyle(
                         color: Colors.grey[600],
-                        fontSize: 14,
                         fontFamily: 'Montserrat',
                       ),
                     ),
-                    if (_resendTimer > 0)
-                      Text(
-                        'Resend in ${_resendTimer}s',
-                        style: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 14,
+                    TextButton(
+                      onPressed: _resendTimer > 0 ? null : _resendOtp,
+                      child: Text(
+                        _resendTimer > 0
+                            ? 'Resend in ${_resendTimer}s'
+                            : 'Resend OTP',
+                        style: const TextStyle(
+                          color: Color(0xFF005DFF),
+                          fontWeight: FontWeight.bold,
                           fontFamily: 'Montserrat',
-                        ),
-                      )
-                    else
-                      TextButton(
-                        onPressed: _loading ? null : _resendOtp,
-                        child: Text(
-                          'Resend OTP',
-                          style: TextStyle(
-                            color: const Color(0xFF005DFF),
-                            fontSize: 14,
-                            fontFamily: 'Montserrat',
-                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
                   ],
                 ),
-                const SizedBox(height: 24),
               ],
               
+              const SizedBox(height: 24),
+
+              // Action button
               SizedBox(
                 width: double.infinity,
+                height: 50,
                 child: ElevatedButton(
                   onPressed: _loading
                       ? null
@@ -518,59 +559,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF005DFF),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
+                    elevation: 2,
                   ),
                   child: _loading
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
                       : Text(_otpSent ? (config.verifyOtpButton ?? 'Verify OTP') : (config.getOtpButton ?? 'Get OTP')),
-                ),
-              ),
-              
-
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSuccessCard(LoginModel config) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: Container(
-          margin: const EdgeInsets.all(24),
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.check_circle,
-                color: Colors.green,
-                size: 64,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                config.successMessage ?? 'Login Successful!',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Montserrat',
                 ),
               ),
             ],

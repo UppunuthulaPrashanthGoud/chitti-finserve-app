@@ -4,25 +4,23 @@ part 'contact_model.g.dart';
 
 @JsonSerializable()
 class ContactModel {
-  final String? officeAddress;
+  final String? companyName;
+  final String? email;
   final String? phone;
   final String? whatsapp;
-  final String? email;
-  final String? hours;
-  final String? workingHours;
   final String? address;
+  final String? workingHours;
   final String? website;
   final Map<String, dynamic>? socialMedia;
   final bool? isActive;
 
   ContactModel({
-    this.officeAddress,
+    this.companyName,
+    this.email,
     this.phone,
     this.whatsapp,
-    this.email,
-    this.hours,
-    this.workingHours,
     this.address,
+    this.workingHours,
     this.website,
     this.socialMedia,
     this.isActive,

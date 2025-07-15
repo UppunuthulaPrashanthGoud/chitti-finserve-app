@@ -4,20 +4,27 @@ part 'banner_model.g.dart';
 
 @JsonSerializable()
 class BannerModel {
+  @JsonKey(name: '_id')
   final String id;
   final String title;
-  final String subtitle;
+  final String? description;
   final String image;
-  final String color;
-  final String action;
+  final String? link;
+  final int sortOrder;
+  final bool isActive;
+  final String? createdAt;
+  final String? updatedAt;
 
   BannerModel({
     required this.id,
     required this.title,
-    required this.subtitle,
+    this.description,
     required this.image,
-    required this.color,
-    required this.action,
+    this.link,
+    this.sortOrder = 0,
+    this.isActive = true,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory BannerModel.fromJson(Map<String, dynamic> json) => _$BannerModelFromJson(json);
@@ -26,9 +33,10 @@ class BannerModel {
 
 @JsonSerializable()
 class BannerListModel {
-  final List<BannerModel> banners;
+  final List<BannerModel> data;
+  final Map<String, dynamic>? pagination;
 
-  BannerListModel({required this.banners});
+  BannerListModel({required this.data, this.pagination});
 
   factory BannerListModel.fromJson(Map<String, dynamic> json) => _$BannerListModelFromJson(json);
   Map<String, dynamic> toJson() => _$BannerListModelToJson(this);

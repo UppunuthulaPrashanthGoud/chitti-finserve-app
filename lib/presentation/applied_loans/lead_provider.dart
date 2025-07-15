@@ -44,11 +44,14 @@ class Application {
 
 final leadListProvider = FutureProvider<List<Application>>((ref) async {
   try {
+    print('🔄 LeadListProvider: Fetching user applications...');
     final repository = ref.read(loanFormRepositoryProvider);
     final applications = await repository.getUserApplications();
     
+    print('✅ LeadListProvider: Fetched ${applications.length} applications');
     return applications.map((app) => Application.fromJson(app)).toList();
   } catch (e) {
+    print('❌ LeadListProvider: Error fetching applications: $e');
     // Return empty list if API fails
     return [];
   }

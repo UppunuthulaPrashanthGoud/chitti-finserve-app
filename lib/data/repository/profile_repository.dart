@@ -75,14 +75,15 @@ class ProfileRepository {
       if (profile.profilePicture != null && profile.profilePicture!.isNotEmpty) {
         body['profilePicture'] = profile.profilePicture;
       }
-      
+
       // Update profile on backend
       final response = await NetworkService.put(
         '/auth/profile',
         body: body,
         token: token,
       );
-      final jsonMap = NetworkService.parseResponse(response);
+      final responseData = NetworkService.parseResponse(response);
+      
       // Update local storage with new data
       await _saveToLocalStorage(profile);
     } catch (e) {

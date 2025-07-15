@@ -26,6 +26,16 @@ class _AppliedLoansScreenState extends ConsumerState<AppliedLoansScreen> with Ti
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     _animationController.forward();
+    
+    // Ensure applications are loaded when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadApplications();
+    });
+  }
+
+  void _loadApplications() {
+    print('🔄 AppliedLoansScreen: Loading applications...');
+    ref.invalidate(leadListProvider);
   }
 
   @override
@@ -109,7 +119,7 @@ class _AppliedLoansScreenState extends ConsumerState<AppliedLoansScreen> with Ti
                 child: IconButton(
                   onPressed: () {
                     // Refresh applications
-                    ref.invalidate(leadListProvider);
+                    _loadApplications();
                   },
                   icon: const Icon(Icons.refresh, color: Colors.white),
                   iconSize: 20,
@@ -160,13 +170,18 @@ class _AppliedLoansScreenState extends ConsumerState<AppliedLoansScreen> with Ti
       return _buildEmptyState();
     }
     
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: applications.length,
-      itemBuilder: (context, index) {
-        final application = applications[index];
-        return _buildLeadCard(application, index);
+    return RefreshIndicator(
+      onRefresh: () async {
+        _loadApplications();
       },
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: applications.length,
+        itemBuilder: (context, index) {
+          final application = applications[index];
+          return _buildLeadCard(application, index);
+        },
+      ),
     );
   }
 

@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'profile_provider.dart';
 import '../../data/model/profile_model.dart';
 import '../../core/validation_helper.dart';
 import '../legal/legal_menu_screen.dart';
+import '../referral/referral_screen.dart';
+import '../login/login_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -74,11 +78,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       await ref.read(profileProvider.notifier).updateProfile(
         name: _nameController.text.trim(),
@@ -89,12 +93,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
         aadharUpload: _aadharUploadPath,
         panUpload: _panUploadPath,
       );
-      
+
       setState(() {
         _isEditing = false;
         _isLoading = false;
       });
-      
+
       ValidationHelper.showSuccessMessage(context, 'Profile updated successfully!');
     } catch (e) {
       setState(() {
@@ -238,7 +242,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                       prefixIcon: Icon(Icons.person, color: Color(0xFF005DFF)),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       filled: true,
-                      fillColor: Colors.grey[100],
+                      fillColor: Colors.grey.shade100,
                     ),
                     validator: ValidationHelper.validateName,
                   ),
@@ -252,11 +256,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                       prefixIcon: Icon(Icons.email, color: Color(0xFF005DFF)),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       filled: true,
-                      fillColor: Colors.grey[100],
+                      fillColor: Colors.grey.shade100,
                     ),
                     validator: ValidationHelper.validateEmail,
                   ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 16),
                   // Phone (read-only)
                   TextFormField(
                     controller: _mobileController,
@@ -266,7 +270,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                       prefixIcon: Icon(Icons.phone, color: Color(0xFF005DFF)),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       filled: true,
-                      fillColor: Colors.grey[100],
+                      fillColor: Colors.grey.shade100,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -279,7 +283,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                       prefixIcon: Icon(Icons.credit_card, color: Color(0xFF005DFF)),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       filled: true,
-                      fillColor: Colors.grey[100],
+                      fillColor: Colors.grey.shade100,
                       hintText: 'Enter 12-digit Aadhar number',
                     ),
                     validator: ValidationHelper.validateAadharNumber,
@@ -299,7 +303,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                       prefixIcon: Icon(Icons.credit_card, color: Color(0xFF005DFF)),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       filled: true,
-                      fillColor: Colors.grey[100],
+                      fillColor: Colors.grey.shade100,
                       hintText: 'e.g., ABCDE1234F',
                     ),
                     validator: ValidationHelper.validatePanNumber,
@@ -365,13 +369,73 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                   
                   const SizedBox(height: 24),
                   
+                  // Referral Section
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.card_giftcard, color: const Color(0xFF005DFF), size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Refer & Earn',
+                              style: TextStyle(
+                                color: const Color(0xFF005DFF),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                fontFamily: 'Montserrat',
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Share your referral code and earn ₹100 for each friend who joins!',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                            fontFamily: 'Montserrat',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ReferralScreen(),
+                            ),
+                          ),
+                          icon: const Icon(Icons.arrow_forward),
+                          label: const Text('View Referrals'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF005DFF),
+                            foregroundColor: Colors.white,
+                            textStyle: const TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                          ),
+                  
+                  const SizedBox(height: 24),
+                  
                   // Legal Information Section
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.grey[50],
+                      color: Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[200]!),
+                      border: Border.all(color: Colors.grey.shade200),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -395,7 +459,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                         Text(
                           'Review our terms, privacy policy, and data safety information.',
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color: Colors.grey.shade600,
                             fontSize: 14,
                             fontFamily: 'Montserrat',
                           ),
@@ -421,6 +485,81 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                         ),
                       ],
                     ),
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Delete Account Section
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.delete_forever, color: Colors.red[600], size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Delete Account',
+                              style: TextStyle(
+                                color: Colors.red[600],
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                fontFamily: 'Montserrat',
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Permanently delete your account and all associated data. This action cannot be undone.',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                            fontFamily: 'Montserrat',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: () => _openDeleteAccountPage(),
+                          icon: const Icon(Icons.open_in_browser),
+                          label: const Text('Delete Account'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red[600],
+                            foregroundColor: Colors.white,
+                            textStyle: const TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Logout Button
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red[600],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        fontFamily: 'Montserrat',
+                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 4,
+                    ),
+                    onPressed: () => _showLogoutDialog(),
+                    child: const Text('Logout'),
                   ),
                 ],
               ),
@@ -458,77 +597,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
     );
   }
 
-  Widget _buildInputField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    required String hint,
-    bool enabled = true,
-    TextInputType? keyboardType,
-    TextInputFormatter? formatter,
-    String? Function(String?)? validator,
-  }) {
-    return TextField(
-      controller: controller,
-      enabled: enabled,
-      keyboardType: keyboardType ?? TextInputType.text,
-      inputFormatters: formatter != null ? [formatter] : null,
-      style: TextStyle(
-        fontFamily: 'Montserrat',
-        color: enabled ? Colors.black87 : Colors.grey[600],
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        prefixIcon: Icon(icon, color: const Color(0xFF005DFF)),
-        filled: true,
-        fillColor: enabled ? Colors.grey[50] : Colors.grey[100],
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF005DFF), width: 2),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDropdownField({
-    required String label,
-    required IconData icon,
-    String? value,
-    required List<DropdownMenuItem<String>> items,
-    void Function(String?)? onChanged,
-  }) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      items: items,
-      onChanged: onChanged,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        prefixIcon: Icon(icon, color: const Color(0xFF005DFF)),
-        filled: true,
-        fillColor: onChanged != null ? Colors.grey[50] : Colors.grey[100],
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF005DFF), width: 2),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-      ),
-      style: TextStyle(
-        fontFamily: 'Montserrat',
-        color: onChanged != null ? Colors.black87 : Colors.grey[600],
-      ),
-    );
-  }
-
   Widget _buildFileUploadField({
     required String label,
     required IconData icon,
@@ -537,9 +605,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
   }) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: Colors.grey.shade300),
         borderRadius: BorderRadius.circular(12),
-        color: onTap != null ? Colors.grey[50] : Colors.grey[100],
+        color: onTap != null ? Colors.grey.shade50 : Colors.grey.shade100,
       ),
       child: InkWell(
         onTap: onTap,
@@ -558,7 +626,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                       label,
                       style: TextStyle(
                         fontFamily: 'Montserrat',
-                        color: onTap != null ? Colors.black87 : Colors.grey[600],
+                        color: onTap != null ? Colors.black87 : Colors.grey.shade600,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -578,7 +646,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
               ),
               Icon(
                 Icons.arrow_forward_ios,
-                color: onTap != null ? const Color(0xFF005DFF) : Colors.grey[400],
+                color: onTap != null ? const Color(0xFF005DFF) : Colors.grey.shade400,
                 size: 16,
               ),
             ],
@@ -636,6 +704,72 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
       ValidationHelper.showSuccessMessage(context, 'PAN document uploaded successfully');
     } catch (e) {
       ValidationHelper.showErrorMessage(context, 'Failed to upload PAN document: ${e.toString()}');
+    }
+  }
+
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Logout'),
+          content: const Text('Are you sure you want to log out?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Logout'),
+              onPressed: () async {
+                try {
+                  // Clear all user data
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.clear(); // Clear all stored data
+                  
+                  // Close the dialog
+                  Navigator.of(dialogContext).pop();
+                  
+                  // Navigate to login screen
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LoginScreen(),
+                    ),
+                  );
+                } catch (e) {
+                  print('❌ Error during logout: $e');
+                  // Still navigate to login even if there's an error
+                  Navigator.of(dialogContext).pop();
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LoginScreen(),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _openDeleteAccountPage() async {
+    const url = 'http://chittifinserv.com/delete-account';
+    
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        ValidationHelper.showErrorMessage(context, 'Could not open delete account page');
+      }
+    } catch (e) {
+      ValidationHelper.showErrorMessage(context, 'Failed to open delete account page: ${e.toString()}');
     }
   }
 } 

@@ -7,32 +7,40 @@ part of 'banner_model.dart';
 // **************************************************************************
 
 BannerModel _$BannerModelFromJson(Map<String, dynamic> json) => BannerModel(
-      id: json['id'] as String,
+      id: json['_id'] as String,
       title: json['title'] as String,
-      subtitle: json['subtitle'] as String,
+      description: json['description'] as String?,
       image: json['image'] as String,
-      color: json['color'] as String,
-      action: json['action'] as String,
+      link: json['link'] as String?,
+      sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
+      isActive: json['isActive'] as bool? ?? true,
+      createdAt: json['createdAt'] as String?,
+      updatedAt: json['updatedAt'] as String?,
     );
 
 Map<String, dynamic> _$BannerModelToJson(BannerModel instance) =>
     <String, dynamic>{
-      'id': instance.id,
+      '_id': instance.id,
       'title': instance.title,
-      'subtitle': instance.subtitle,
+      'description': instance.description,
       'image': instance.image,
-      'color': instance.color,
-      'action': instance.action,
+      'link': instance.link,
+      'sortOrder': instance.sortOrder,
+      'isActive': instance.isActive,
+      'createdAt': instance.createdAt,
+      'updatedAt': instance.updatedAt,
     };
 
 BannerListModel _$BannerListModelFromJson(Map<String, dynamic> json) =>
     BannerListModel(
-      banners: (json['banners'] as List<dynamic>)
+      data: (json['data'] as List<dynamic>)
           .map((e) => BannerModel.fromJson(e as Map<String, dynamic>))
           .toList(),
+      pagination: json['pagination'] as Map<String, dynamic>?,
     );
 
 Map<String, dynamic> _$BannerListModelToJson(BannerListModel instance) =>
     <String, dynamic>{
-      'banners': instance.banners,
+      'data': instance.data,
+      'pagination': instance.pagination,
     };

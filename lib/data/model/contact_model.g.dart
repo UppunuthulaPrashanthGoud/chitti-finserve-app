@@ -7,13 +7,12 @@ part of 'contact_model.dart';
 // **************************************************************************
 
 ContactModel _$ContactModelFromJson(Map<String, dynamic> json) => ContactModel(
-      officeAddress: json['officeAddress'] as String?,
+      companyName: json['companyName'] as String?,
+      email: json['email'] as String?,
       phone: json['phone'] as String?,
       whatsapp: json['whatsapp'] as String?,
-      email: json['email'] as String?,
-      hours: json['hours'] as String?,
-      workingHours: json['workingHours'] as String?,
       address: json['address'] as String?,
+      workingHours: json['workingHours'] as String?,
       website: json['website'] as String?,
       socialMedia: json['socialMedia'] as Map<String, dynamic>?,
       isActive: json['isActive'] as bool?,
@@ -21,13 +20,12 @@ ContactModel _$ContactModelFromJson(Map<String, dynamic> json) => ContactModel(
 
 Map<String, dynamic> _$ContactModelToJson(ContactModel instance) =>
     <String, dynamic>{
-      'officeAddress': instance.officeAddress,
+      'companyName': instance.companyName,
+      'email': instance.email,
       'phone': instance.phone,
       'whatsapp': instance.whatsapp,
-      'email': instance.email,
-      'hours': instance.hours,
-      'workingHours': instance.workingHours,
       'address': instance.address,
+      'workingHours': instance.workingHours,
       'website': instance.website,
       'socialMedia': instance.socialMedia,
       'isActive': instance.isActive,

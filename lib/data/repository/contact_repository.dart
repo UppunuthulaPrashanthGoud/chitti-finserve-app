@@ -7,7 +7,11 @@ class ContactRepository {
     try {
       final response = await NetworkService.get('/configuration/public');
       final jsonMap = NetworkService.parseResponse(response);
-      return ContactModel.fromJson(jsonMap['data']);
+      
+      // Extract contactInfo from the response
+      final contactInfo = jsonMap['data']['contactInfo'] ?? {};
+      
+      return ContactModel.fromJson(contactInfo);
     } catch (e) {
       throw Exception('Failed to load contact info: $e');
     }
