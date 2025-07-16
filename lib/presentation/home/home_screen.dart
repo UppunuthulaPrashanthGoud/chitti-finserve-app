@@ -185,8 +185,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
         }
         
         return Container(
-          height: 200,
-          margin: const EdgeInsets.symmetric(horizontal: 16),
+          height: 201,
+          margin: const EdgeInsets.symmetric(vertical: 8),
           child: Column(
             children: [
               Expanded(
@@ -465,8 +465,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
                     crossAxisSpacing: 8,
-                    mainAxisSpacing: 10,
-                    childAspectRatio: 1.2,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1.0,
                             ),
                             itemCount: categories.length,
                             itemBuilder: (context, index) {
@@ -483,6 +483,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                     );
                   },
                 ),
+                // Add bottom padding to prevent overflow
+                const SizedBox(height: 60),
               ],
             ),
           ),
@@ -562,12 +564,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
             color: Colors.white,
           ),
           child: Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(4),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
                     color: const Color(0xFF005DFF).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -576,23 +578,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                       ? category.icon!.startsWith('assets/')
                           ? Image.asset(
                               iconUrl,
-                              width: 52,
-                              height: 52,
+                              width: 44,
+                              height: 44,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) =>
-                                  Icon(Icons.category, size: 52, color: const Color(0xFF005DFF)),
+                                  Icon(Icons.category, size: 44, color: const Color(0xFF005DFF)),
                             )
                           : Image.network(
                               iconUrl,
-                              width: 52,
-                              height: 52,
+                              width: 44,
+                              height: 44,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) =>
-                                  Icon(Icons.category, size: 52, color: const Color(0xFF005DFF)),
+                                  Icon(Icons.category, size: 44, color: const Color(0xFF005DFF)),
                             )
-                      : Icon(Icons.category, size: 52, color: const Color(0xFF005DFF)),
+                      : Icon(Icons.category, size: 44, color: const Color(0xFF005DFF)),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   category.name ?? 'Unknown Category',
                   style: const TextStyle(

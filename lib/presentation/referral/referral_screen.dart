@@ -121,7 +121,7 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> with TickerProv
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       child: Column(
         children: [
           Row(
@@ -198,56 +198,63 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> with TickerProv
   }
 
   Widget _buildContent(ReferralDataModel referralData) {
-    return Column(
-      children: [
-        // Wallet Card
-        _buildWalletCard(referralData.wallet),
-        
-        // Referral Code Section
-        _buildReferralCodeSection(referralData),
-        
-        // Tab Bar
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: TabBar(
-            controller: _tabController,
-            indicator: BoxDecoration(
-              color: const Color(0xFF005DFF),
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        children: [
+          // Wallet Card
+          _buildWalletCard(referralData.wallet),
+          
+          // Referral Code Section
+          _buildReferralCodeSection(referralData),
+          
+          // Tab Bar
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(12),
             ),
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.grey.shade600,
-            tabs: const [
-              Tab(text: 'Statistics'),
-              Tab(text: 'Referrals'),
-              Tab(text: 'Transactions'),
-            ],
+            child: TabBar(
+              controller: _tabController,
+              indicator: BoxDecoration(
+                color: const Color(0xFF005DFF),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.grey.shade600,
+              tabs: const [
+                Tab(text: 'Statistics'),
+                Tab(text: 'Referrals'),
+                Tab(text: 'Transactions'),
+              ],
+            ),
           ),
-        ),
-        
-        // Tab Content
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildStatisticsTab(referralData.statistics),
-              _buildReferralsTab(referralData.referrals),
-              _buildTransactionsTab(),
-            ],
+          
+          // Tab Content with fixed height
+          Container(
+            height: 400, // Fixed height to prevent overflow
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildStatisticsTab(referralData.statistics),
+                _buildReferralsTab(referralData.referrals),
+                _buildTransactionsTab(),
+              ],
+            ),
           ),
-        ),
-      ],
+          
+          // Bottom padding
+          const SizedBox(height: 20),
+        ],
+      ),
     );
   }
 
   Widget _buildWalletCard(WalletModel wallet) {
     return Container(
-      margin: const EdgeInsets.all(24),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF005DFF), Color(0xFF5BB5FF)],
@@ -378,8 +385,8 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> with TickerProv
 
   Widget _buildReferralCodeSection(ReferralDataModel referralData) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(16),
@@ -538,8 +545,9 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> with TickerProv
   }
 
   Widget _buildStatisticsTab(ReferralStatisticsModel statistics) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(20),
       child: Column(
         children: [
           _buildStatCard('Total Referrals', statistics.totalReferrals.toString(), Icons.people),
@@ -549,6 +557,7 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> with TickerProv
           _buildStatCard('Pending Referrals', statistics.pendingReferrals.toString(), Icons.pending),
           const SizedBox(height: 16),
           _buildStatCard('Total Earned', '₹${statistics.totalEarned.toStringAsFixed(0)}', Icons.monetization_on),
+          const SizedBox(height: 20), // Bottom padding
         ],
       ),
     );
@@ -639,7 +648,7 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> with TickerProv
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       itemCount: referrals.length,
       itemBuilder: (context, index) {
         final referral = referrals[index];
@@ -786,7 +795,7 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> with TickerProv
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(20),
             itemCount: transactionsData.transactions.length,
             itemBuilder: (context, index) {
               final transaction = transactionsData.transactions[index];
