@@ -49,10 +49,10 @@ class AppConfig {
   static const int maxRetries = 3;
   
   // Feature Flags
-  static const bool enableDebugMode = true;
-  static const bool enableLogging = true;
+  static const bool enableDebugMode = false; // Disabled for production
+  static bool get enableLogging => isDevelopment && enableDebugMode; // Only enable in development
   
   // Development vs Production
-  static bool get isDevelopment => false; // Change to false for production
+  static bool get isDevelopment => Environment == 'dev'; // Based on environment
   static bool get isProduction => !isDevelopment;
 } 
