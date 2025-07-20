@@ -14,6 +14,11 @@ import '../../core/validation_helper.dart';
 import 'success_screen.dart';
 import '../../core/app_config.dart';
 import '../../core/image_utils.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as p;
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import '../../data/model/profile_model.dart';
 
 class LoanFormScreen extends ConsumerStatefulWidget {
   final String? prefillMobile;
@@ -76,6 +81,17 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
         if (_controllers.containsKey('pan_number') && _controllers['pan_number']!.text.isEmpty) {
           _controllers['pan_number']!.text = profile.panNumber ?? '';
         }
+        // Prefill aadhar and pan file fields if not already set
+        if ((aadharDocPath == null || aadharDocPath!.isEmpty) && (profile.aadharUpload != null && profile.aadharUpload!.isNotEmpty)) {
+          setState(() {
+            aadharDocPath = profile.aadharUpload;
+          });
+        }
+        if ((panDocPath == null || panDocPath!.isEmpty) && (profile.panUpload != null && profile.panUpload!.isNotEmpty)) {
+          setState(() {
+            panDocPath = profile.panUpload;
+          });
+        }
         if (_controllers.containsKey('aadhar_upload') && _dropdownValues['aadhar_upload'] == null) {
           setState(() {
             _dropdownValues['aadhar_upload'] = profile.aadharUpload;
@@ -92,37 +108,67 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
 
   void _prefillFromBackendUser() async {
     if (_hasPrefilled) return; // Prevent multiple calls
-    
     try {
       final userData = await ref.read(loanFormRepositoryProvider).getCurrentUser();
+      ProfileModel? profile;
+      final profileAsync = ref.read(profileProvider);
+      profileAsync.whenData((p) => profile = p);
       if (userData != null) {
-        // Auto-fill from backend user data
+        // Auto-fill from backend user data, fallback to profile for missing fields
         if (_controllers.containsKey('full_name') && _controllers['full_name']!.text.isEmpty) {
-          _controllers['full_name']!.text = userData['name'] ?? '';
+          _controllers['full_name']!.text = userData['name'] ?? profile?.name ?? '';
         }
         if (_controllers.containsKey('mobile') && _controllers['mobile']!.text.isEmpty) {
-          _controllers['mobile']!.text = userData['phone'] ?? '';
+          _controllers['mobile']!.text = userData['phone'] ?? profile?.phone ?? '';
         }
         if (_controllers.containsKey('email') && _controllers['email']!.text.isEmpty) {
-          _controllers['email']!.text = userData['email'] ?? '';
+          _controllers['email']!.text = userData['email'] ?? profile?.email ?? '';
         }
+        // Prefill aadhar and pan number for both snake_case and camelCase field IDs
         if (_controllers.containsKey('aadhar_number') && _controllers['aadhar_number']!.text.isEmpty) {
-          _controllers['aadhar_number']!.text = userData['aadharNumber'] ?? '';
+          _controllers['aadhar_number']!.text = userData['aadharNumber'] ?? profile?.aadharNumber ?? '';
+        }
+        if (_controllers.containsKey('aadharNumber') && _controllers['aadharNumber']!.text.isEmpty) {
+          _controllers['aadharNumber']!.text = userData['aadharNumber'] ?? profile?.aadharNumber ?? '';
         }
         if (_controllers.containsKey('pan_number') && _controllers['pan_number']!.text.isEmpty) {
-          _controllers['pan_number']!.text = userData['panNumber'] ?? '';
+          _controllers['pan_number']!.text = userData['panNumber'] ?? profile?.panNumber ?? '';
+        }
+        if (_controllers.containsKey('panNumber') && _controllers['panNumber']!.text.isEmpty) {
+          _controllers['panNumber']!.text = userData['panNumber'] ?? profile?.panNumber ?? '';
+        }
+        // Prefill aadhar and pan file fields if not already set
+        if ((aadharDocPath == null || aadharDocPath!.isEmpty)) {
+          final backendAadhar = userData['aadharUpload'];
+          final profileAadhar = profile?.aadharUpload;
+          if (backendAadhar != null && backendAadhar.isNotEmpty) {
+            setState(() { aadharDocPath = backendAadhar; });
+          } else if (profileAadhar != null && profileAadhar.isNotEmpty) {
+            setState(() { aadharDocPath = profileAadhar; });
+          }
+        }
+        if ((panDocPath == null || panDocPath!.isEmpty)) {
+          final backendPan = userData['panUpload'];
+          final profilePan = profile?.panUpload;
+          if (backendPan != null && backendPan.isNotEmpty) {
+            setState(() { panDocPath = backendPan; });
+          } else if (profilePan != null && profilePan.isNotEmpty) {
+            setState(() { panDocPath = profilePan; });
+          }
         }
         if (_controllers.containsKey('aadhar_upload') && _dropdownValues['aadhar_upload'] == null) {
           setState(() {
-            _dropdownValues['aadhar_upload'] = userData['aadharUpload'];
+            _dropdownValues['aadhar_upload'] = userData['aadharUpload'] ?? profile?.aadharUpload;
           });
         }
         if (_controllers.containsKey('pan_upload') && _dropdownValues['pan_upload'] == null) {
           setState(() {
-            _dropdownValues['pan_upload'] = userData['panUpload'];
+            _dropdownValues['pan_upload'] = userData['panUpload'] ?? profile?.panUpload;
           });
         }
         _hasPrefilled = true; // Mark as prefilled
+      } else {
+        _prefillFromProfile();
       }
     } catch (e) {
       // If backend fails, fall back to profile data
@@ -200,6 +246,14 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
               case 'employmentType':
                 formData['employmentType'] = value;
                 break;
+              case 'preferredBank':
+                formData['preferredBank'] = value;
+                break;
+              case 'state':
+                // Handle state as part of address
+                if (!formData.containsKey('address')) formData['address'] = {};
+                (formData['address'] as Map)['state'] = value;
+                break;
               default:
                 formData[fieldId] = value;
             }
@@ -228,10 +282,6 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
               case 'city':
                 if (!formData.containsKey('address')) formData['address'] = {};
                 (formData['address'] as Map)['city'] = controller.text;
-                break;
-              case 'state':
-                if (!formData.containsKey('address')) formData['address'] = {};
-                (formData['address'] as Map)['state'] = controller.text;
                 break;
               case 'pincode':
                 if (!formData.containsKey('address')) formData['address'] = {};
@@ -279,6 +329,9 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
       }
       if (!formData.containsKey('employmentType') || formData['employmentType'] == null) {
         missingFields.add('employmentType');
+      }
+      if (!formData.containsKey('preferredBank') || formData['preferredBank'] == null) {
+        missingFields.add('preferredBank');
       }
       
       // Check address fields
@@ -845,7 +898,6 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
       if (!_controllers.containsKey(fieldId)) {
         _controllers[fieldId] = TextEditingController();
       }
-      
       switch (field.type) {
         case 'dropdown':
           final currentValue = _dropdownValues[fieldId];
@@ -878,9 +930,8 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
               ],
             ),
             child: DropdownButtonFormField<String>(
-              value: validValue,
+              value: options.isEmpty ? null : validValue,
               items: options.map((opt) {
-                // Handle both string and dynamic options
                 final optionValue = opt is String ? opt : opt.toString();
                 return DropdownMenuItem<String>(
                   value: optionValue,
@@ -917,6 +968,10 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
             ),
           );
         case 'file':
+          // Determine if this is Aadhar or PAN by fieldId
+          String? selectedFilePath;
+                                if (fieldId == 'aadharUpload') selectedFilePath = aadharDocPath;
+                      if (fieldId == 'panUpload') selectedFilePath = panDocPath;
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
@@ -934,8 +989,83 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () {
-                // TODO: File picker integration
+                onTap: () async {
+                  try {
+                    // Check if we're on a supported platform
+                    if (kIsWeb) {
+                      ValidationHelper.showErrorMessage(context, 'File upload is not supported on web. Please use the mobile app.');
+                      return;
+                    }
+                    
+                    FilePickerResult? result = await FilePicker.platform.pickFiles(
+                      type: FileType.custom, 
+                      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png']
+                    );
+                    
+                    if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
+                      final filePath = result.files.single.path!;
+                      
+                      // Check if file exists and is accessible
+                      try {
+                        final file = File(filePath);
+                        final exists = await file.exists();
+                        
+                        if (!exists) {
+                          ValidationHelper.showErrorMessage(context, 'Selected file not found. Please try again.');
+                          return;
+                        }
+                        
+                        final fileSize = await file.length();
+                        
+                        if (fileSize == 0) {
+                          ValidationHelper.showErrorMessage(context, 'Selected file is empty. Please choose a valid file.');
+                          return;
+                        }
+                        
+                        if (fieldId == 'aadharUpload') {
+                          try {
+                            final uploaded = await ref.read(loanFormRepositoryProvider).uploadApplicationDocuments(aadharFile: file);
+                            setState(() {
+                              aadharDocPath = uploaded['aadharCard'];
+                            });
+                            ValidationHelper.showSuccessMessage(context, 'Aadhar document uploaded successfully!');
+                          } catch (uploadError) {
+                            ValidationHelper.showErrorMessage(context, 'Failed to upload Aadhar: $uploadError');
+                          }
+                        } else if (fieldId == 'panUpload') {
+                          try {
+                            final uploaded = await ref.read(loanFormRepositoryProvider).uploadApplicationDocuments(panFile: file);
+                            setState(() {
+                              panDocPath = uploaded['panCard'];
+                            });
+                            ValidationHelper.showSuccessMessage(context, 'PAN document uploaded successfully!');
+                          } catch (uploadError) {
+                            ValidationHelper.showErrorMessage(context, 'Failed to upload PAN: $uploadError');
+                          }
+                        }
+                      } catch (fileError) {
+                        ValidationHelper.showErrorMessage(context, 'Cannot access selected file. Please try again.');
+                      }
+                    } else {
+                      if (result != null && result.files.isNotEmpty) {
+                      }
+                    }
+                  } catch (e) {
+                    String errorMessage = 'File picker error';
+                    
+                    if (e.toString().contains('_Namespace')) {
+                      errorMessage = 'File picker not supported on this platform. Please use a mobile device.';
+                    } else if (e.toString().contains('permission')) {
+                      errorMessage = 'Permission denied. Please allow file access and try again.';
+                    } else if (e.toString().contains('cancel')) {
+                      // User cancelled, don't show error
+                      return;
+                    } else {
+                      errorMessage = 'File picker error: $e';
+                    }
+                    
+                    ValidationHelper.showErrorMessage(context, errorMessage);
+                  }
               },
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
@@ -973,7 +1103,16 @@ class _LoanFormScreenState extends ConsumerState<LoanFormScreen> {
                               ),
                             ),
                             const SizedBox(height: 2),
-                            Text(
+                            selectedFilePath != null
+                                ? Text(
+                                    p.basename(selectedFilePath),
+                                    style: TextStyle(
+                                      color: Colors.green[600],
+                                      fontSize: 12,
+                                      fontFamily: 'Montserrat',
+                                    ),
+                                  )
+                                : Text(
                               'Tap to upload file',
                               style: TextStyle(
                                 color: Colors.grey[600],

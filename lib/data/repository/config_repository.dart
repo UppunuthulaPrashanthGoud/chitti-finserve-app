@@ -9,6 +9,7 @@ class AppConfig {
   final List<Map<String, dynamic>> leadStatuses;
   final Map<String, dynamic> notifications;
   final Map<String, dynamic> legal;
+  final Map<String, dynamic> forceUpdate;
 
   AppConfig({
     required this.splash,
@@ -18,6 +19,7 @@ class AppConfig {
     required this.leadStatuses,
     required this.notifications,
     required this.legal,
+    required this.forceUpdate,
   });
 
   factory AppConfig.fromJson(Map<String, dynamic> json) => AppConfig(
@@ -28,6 +30,7 @@ class AppConfig {
     leadStatuses: List<Map<String, dynamic>>.from(json['leadStatuses'] ?? []),
     notifications: json['notifications'] ?? {},
     legal: json['legal'] ?? {},
+    forceUpdate: json['forceUpdate'] ?? {},
   );
 }
 

@@ -5,52 +5,34 @@ class ImageUtils {
   /// Handles both network URLs and relative paths
   static String getImageUrl(String? imagePath) {
     if (imagePath == null || imagePath.isEmpty) {
-      if (AppConfig.enableLogging) {
-        print('🔧 ImageUtils Warning: Empty or null image path');
-      }
       return '';
     }
 
     // If it's already a full URL, return as is
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      if (AppConfig.enableLogging) {
-        print('🔧 ImageUtils: Using full URL as is: $imagePath');
-      }
       return imagePath;
     }
 
     // If it's a local asset, return as is
     if (imagePath.startsWith('assets/')) {
-      if (AppConfig.enableLogging) {
-        print('🔧 ImageUtils: Using local asset: $imagePath');
-      }
       return imagePath;
     }
 
     // For backend uploads, construct the full URL
-    // Remove any leading slash from image path
+    // Get base URL and ensure it doesn't end with slash
+    String baseUrl = AppConfig.assetsBaseUrl;
+    if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.substring(0, baseUrl.length - 1);
+    }
+
+    // Clean the image path - remove leading slash if present
     String cleanImagePath = imagePath;
     if (cleanImagePath.startsWith('/')) {
       cleanImagePath = cleanImagePath.substring(1);
     }
 
-    // Ensure base URL doesn't end with slash and image path doesn't start with slash
-    final baseUrl = AppConfig.assetsBaseUrl.endsWith('/')
-        ? AppConfig.assetsBaseUrl.substring(0, AppConfig.assetsBaseUrl.length - 1)
-        : AppConfig.assetsBaseUrl;
-
+    // Construct the full URL properly
     final fullUrl = '$baseUrl/$cleanImagePath';
-    
-    // Debug logging
-    if (AppConfig.enableLogging) {
-      print('🔧 ImageUtils Debug:');
-      print('   Original path: $imagePath');
-      print('   Clean path: $cleanImagePath');
-      print('   Base URL: $baseUrl');
-      print('   Final URL: $fullUrl');
-      print('   URL length: ${fullUrl.length}');
-    }
-
     return fullUrl;
   }
 

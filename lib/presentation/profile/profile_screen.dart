@@ -4,12 +4,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'profile_provider.dart';
 import '../../data/model/profile_model.dart';
 import '../../core/validation_helper.dart';
 import '../legal/legal_menu_screen.dart';
 import '../referral/referral_screen.dart';
 import '../login/login_screen.dart';
+import 'package:http/http.dart' as http;
+import '../../core/network_service.dart';
+import '../../data/repository/profile_repository.dart';
+import '../../core/app_config.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -32,6 +39,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
   bool _isLoading = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  File? _aadharFile;
+  File? _panFile;
+  File? _profilePictureFile;
 
   @override
   void initState() {
@@ -84,28 +94,65 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
     });
 
     try {
+      // Get the current profile to preserve existing file paths if not updated
+      final currentProfile = ref.read(profileProvider).value;
+      String? aadharPath = currentProfile?.aadharUpload;
+      String? panPath = currentProfile?.panUpload;
+      String? profilePicturePath = currentProfile?.profilePicture;
+      // If either file is selected, upload both together
+      if (_aadharFile != null || _panFile != null) {
+        final uploaded = await ref.read(profileProvider.notifier).uploadUserDocument(
+          aadharFile: _aadharFile,
+          panFile: _panFile,
+        );
+        if (uploaded['aadharCard'] != null && uploaded['aadharCard']!.isNotEmpty) aadharPath = uploaded['aadharCard'];
+        if (uploaded['panCard'] != null && uploaded['panCard']!.isNotEmpty) panPath = uploaded['panCard'];
+      }
+      // If profile picture file is selected, upload it
+      if (_profilePictureFile != null) {
+        final repo = ref.read(profileRepositoryProvider);
+        final token = await repo.getAuthToken();
+        final uri = Uri.parse('${NetworkService.baseUrl}/upload/image');
+        final request = http.MultipartRequest('POST', uri);
+        request.headers['Authorization'] = 'Bearer $token';
+        request.files.add(await http.MultipartFile.fromPath('image', _profilePictureFile!.path));
+        final streamedResponse = await request.send();
+        final response = await http.Response.fromStream(streamedResponse);
+        if (response.statusCode != 200) {
+          throw Exception('Failed to upload profile picture: ${response.body}');
+        }
+        final data = NetworkService.parseResponse(response);
+        if (data['data'] != null && data['data']['path'] != null && data['data']['path'].toString().isNotEmpty) {
+          profilePicturePath = data['data']['path'];
+        }
+      }
       await ref.read(profileProvider.notifier).updateProfile(
         name: _nameController.text.trim(),
         email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
         aadharNumber: _aadharNumberController.text.trim().isEmpty ? null : _aadharNumberController.text.trim(),
         panNumber: _panNumberController.text.trim().isEmpty ? null : _panNumberController.text.trim(),
-        profilePicture: _profilePicturePath,
-        aadharUpload: _aadharUploadPath,
-        panUpload: _panUploadPath,
+        profilePicture: profilePicturePath,
+        aadharUpload: aadharPath,
+        panUpload: panPath,
       );
-
+      // Debug: print file paths after update
+      print('DEBUG: After update - Profile picture path: $profilePicturePath');
+      print('DEBUG: After update - Aadhar file path: $aadharPath');
+      print('DEBUG: After update - PAN file path: $panPath');
+      // Reload profile to update file previews
+      await ref.read(profileProvider.notifier).loadProfile();
       setState(() {
         _isEditing = false;
         _isLoading = false;
+        _aadharFile = null;
+        _panFile = null;
+        _profilePictureFile = null;
       });
-
       ValidationHelper.showSuccessMessage(context, 'Profile updated successfully!');
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      
-      // Handle different types of errors
       if (e.toString().contains('Validation error') || e.toString().contains('400')) {
         ValidationHelper.showValidationError(context, e.toString());
       } else {
@@ -148,6 +195,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
   }
 
   Widget _buildHeader() {
+    final profile = ref.watch(profileProvider).value;
+    final assetsBaseUrl = AppConfig.assetsBaseUrl.endsWith('/')
+        ? AppConfig.assetsBaseUrl.substring(0, AppConfig.assetsBaseUrl.length - 1)
+        : AppConfig.assetsBaseUrl;
+    Widget profilePictureWidget = (profile?.profilePicture ?? '').isNotEmpty
+        ? ClipRRect(
+            borderRadius: BorderRadius.circular(48),
+            child: Image.network(
+              (profile?.profilePicture ?? '').startsWith('http')
+                  ? (profile?.profilePicture ?? '')
+                  : assetsBaseUrl + ((profile?.profilePicture ?? '').startsWith('/') ? (profile?.profilePicture ?? '') : '/${profile?.profilePicture ?? ''}'),
+              width: 96,
+              height: 96,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => const Icon(Icons.account_circle, size: 96, color: Colors.white),
+            ),
+          )
+        : Icon(Icons.person_outline, size: 96, color: Colors.white);
     return Column(
       children: [
         Container(
@@ -157,11 +222,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white.withOpacity(0.2)),
           ),
-          child: Icon(
-            Icons.person_outline,
-            size: 48,
-            color: Colors.white,
-          ),
+          child: profilePictureWidget,
         ),
         const SizedBox(height: 16),
         AnimatedTextKit(
@@ -195,41 +256,82 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
   Widget _buildProfileForm(AsyncValue<ProfileModel?> profileAsync) {
     return profileAsync.when(
       data: (profile) {
-        return Card(
-          elevation: 16,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Personal Information',
-                        style: TextStyle(
-                          color: const Color(0xFF005DFF),
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Montserrat',
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _isEditing = !_isEditing;
-                          });
-                        },
-                        icon: Icon(
-                          _isEditing ? Icons.save : Icons.edit,
-                          color: const Color(0xFF005DFF),
-                        ),
-                      ),
-                    ],
+        final assetsBaseUrl = AppConfig.assetsBaseUrl.endsWith('/')
+            ? AppConfig.assetsBaseUrl.substring(0, AppConfig.assetsBaseUrl.length - 1)
+            : AppConfig.assetsBaseUrl;
+        // Debug file paths
+        print('DEBUG: Profile picture path:  [32m${profile?.profilePicture} [0m');
+        print('DEBUG: Aadhar file path:  [32m${profile?.aadharUpload} [0m');
+        print('DEBUG: PAN file path:  [32m${profile?.panUpload} [0m');
+
+        // Profile Picture Preview (above card)
+        Widget profilePictureWidget = (profile?.profilePicture ?? '').isNotEmpty
+            ? Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(60),
+                  child: Image.network(
+                    (profile?.profilePicture ?? '').startsWith('http')
+                        ? (profile?.profilePicture ?? '')
+                        : assetsBaseUrl + ((profile?.profilePicture ?? '').startsWith('/') ? (profile?.profilePicture ?? '') : '/${profile?.profilePicture ?? ''}'),
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.account_circle, size: 120, color: Colors.grey),
                   ),
+                ),
+              )
+            : Center(
+                child: Icon(Icons.account_circle, size: 120, color: Colors.grey),
+              );
+        // Helper to build file preview
+        Widget buildFilePreview(String? filePath, String label) {
+          if (filePath == null || filePath.isEmpty) return const SizedBox();
+          final fullUrl = filePath.startsWith('http') ? filePath : assetsBaseUrl + (filePath.startsWith('/') ? filePath : '/$filePath');
+          final isImage = filePath.endsWith('.jpg') || filePath.endsWith('.jpeg') || filePath.endsWith('.png') || filePath.endsWith('.webp');
+          return Row(
+            children: [
+              isImage
+                  ? GestureDetector(
+                      onTap: () => launchUrl(Uri.parse(fullUrl), mode: LaunchMode.externalApplication),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          fullUrl,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 40),
+                        ),
+                      ),
+                    )
+                  : IconButton(
+                      icon: const Icon(Icons.insert_drive_file, size: 40, color: Color(0xFF005DFF)),
+                      onPressed: () => launchUrl(Uri.parse(fullUrl), mode: LaunchMode.externalApplication),
+                    ),
+              const SizedBox(width: 12),
+              Expanded(child: Text(label, style: const TextStyle(fontFamily: 'Montserrat'))),
+              IconButton(
+                icon: const Icon(Icons.download, color: Color(0xFF005DFF)),
+                onPressed: () => launchUrl(Uri.parse(fullUrl), mode: LaunchMode.externalApplication),
+                tooltip: 'Download',
+              ),
+            ],
+          );
+        }
+        return Column(
+          children: [
+            const SizedBox(height: 0), // Further reduced space above the form
+            Card(
+              elevation: 16,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Profile information fields (no profile picture here)
                   
                   const SizedBox(height: 24),
                   
@@ -344,6 +446,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                     onTap: _isEditing ? () => _selectPanFile() : null,
                   ),
                   
+                  const SizedBox(height: 20),
+                  
+                  // Aadhar File Preview
+                  if ((profile?.aadharUpload ?? '').isNotEmpty)
+                    buildFilePreview(profile!.aadharUpload, 'Aadhar Document'),
+                  if ((profile?.aadharUpload ?? '').isNotEmpty) const SizedBox(height: 16),
+                  // PAN File Preview
+                  if ((profile?.panUpload ?? '').isNotEmpty)
+                    buildFilePreview(profile!.panUpload, 'PAN Document'),
+                  if ((profile?.panUpload ?? '').isNotEmpty) const SizedBox(height: 16),
+                  
                   const SizedBox(height: 32),
                   
                   // Save Button
@@ -365,66 +478,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
                             ),
                             onPressed: _saveProfile,
                             child: const Text('Save Profile'),
-                          ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Referral Section
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.card_giftcard, color: const Color(0xFF005DFF), size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Refer & Earn',
-                              style: TextStyle(
-                                color: const Color(0xFF005DFF),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                fontFamily: 'Montserrat',
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Share your referral code and earn ₹100 for each friend who joins!',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 14,
-                            fontFamily: 'Montserrat',
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        ElevatedButton.icon(
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ReferralScreen(),
-                            ),
-                          ),
-                          icon: const Icon(Icons.arrow_forward),
-                          label: const Text('View Referrals'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF005DFF),
-                            foregroundColor: Colors.white,
-                            textStyle: const TextStyle(
-                              fontFamily: 'Montserrat',
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                           ),
                   
                   const SizedBox(height: 24),
@@ -565,36 +618,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
               ),
             ),
           ),
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(
-        child: Card(
-          elevation: 8,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
-                const SizedBox(height: 16),
-                Text(
-                  'Failed to load profile',
-                  style: TextStyle(color: Colors.red[300], fontFamily: 'Montserrat'),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  e.toString(),
-                  style: TextStyle(color: Colors.red[200], fontSize: 12, fontFamily: 'Montserrat'),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+        ),
+      ],
+    );
+  },
+  loading: () => const Center(child: CircularProgressIndicator()),
+  error: (e, _) => Center(
+    child: Card(
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load profile',
+              style: TextStyle(color: Colors.red[300], fontFamily: 'Montserrat'),
             ),
-          ),
+            const SizedBox(height: 8),
+            Text(
+              e.toString(),
+              style: TextStyle(color: Colors.red[200], fontSize: 12, fontFamily: 'Montserrat'),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildFileUploadField({
@@ -658,52 +713,106 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
 
   Future<void> _selectProfilePicture() async {
     try {
-      // TODO: Implement actual image picker with file upload
-      // For now, simulate file upload
-      setState(() {
-        _profilePicturePath = 'profile_picture.jpg';
-      });
-      
-      // Upload to backend
-      await ref.read(profileProvider.notifier).uploadDocument('profilePicture', _profilePicturePath!);
-      
-      ValidationHelper.showSuccessMessage(context, 'Profile picture uploaded successfully');
+      if (kIsWeb) {
+        ValidationHelper.showErrorMessage(context, 'File upload is not supported on web. Please use the mobile app.');
+        return;
+      }
+      FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.image);
+      if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
+        final filePath = result.files.single.path!;
+        final file = File(filePath);
+        if (!await file.exists()) {
+          ValidationHelper.showErrorMessage(context, 'Selected file not found. Please try again.');
+          return;
+        }
+        setState(() {
+          _profilePictureFile = file;
+          _profilePicturePath = file.path;
+        });
+        // Do NOT upload here, upload on save
+      }
     } catch (e) {
-      ValidationHelper.showErrorMessage(context, 'Failed to upload profile picture: ${e.toString()}');
+      String errorMessage = 'Failed to select profile picture';
+      if (e.toString().contains('_Namespace')) {
+        errorMessage = 'File picker not supported on this platform. Please use a mobile device.';
+      } else if (e.toString().contains('permission')) {
+        errorMessage = 'Permission denied. Please allow file access and try again.';
+      } else if (e.toString().contains('cancel')) {
+        return;
+      } else {
+        errorMessage = 'Failed to select profile picture: $e';
+      }
+      ValidationHelper.showErrorMessage(context, errorMessage);
     }
   }
 
   Future<void> _selectAadharFile() async {
     try {
-      // TODO: Implement actual file picker with file upload
-      // For now, simulate file upload
-      setState(() {
-        _aadharUploadPath = 'aadhar_document.pdf';
-      });
-      
-      // Upload to backend
-      await ref.read(profileProvider.notifier).uploadDocument('aadharUpload', _aadharUploadPath!);
-      
-      ValidationHelper.showSuccessMessage(context, 'Aadhar document uploaded successfully');
+      if (kIsWeb) {
+        ValidationHelper.showErrorMessage(context, 'File upload is not supported on web. Please use the mobile app.');
+        return;
+      }
+      FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png']);
+      if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
+        final filePath = result.files.single.path!;
+        final file = File(filePath);
+        if (!await file.exists()) {
+          ValidationHelper.showErrorMessage(context, 'Selected file not found. Please try again.');
+          return;
+        }
+        setState(() {
+          _aadharFile = file;
+          _aadharUploadPath = file.path;
+        });
+        // Do NOT upload here, upload on save
+      }
     } catch (e) {
-      ValidationHelper.showErrorMessage(context, 'Failed to upload Aadhar document: ${e.toString()}');
+      String errorMessage = 'Failed to select Aadhar document';
+      if (e.toString().contains('_Namespace')) {
+        errorMessage = 'File picker not supported on this platform. Please use a mobile device.';
+      } else if (e.toString().contains('permission')) {
+        errorMessage = 'Permission denied. Please allow file access and try again.';
+      } else if (e.toString().contains('cancel')) {
+        return;
+      } else {
+        errorMessage = 'Failed to select Aadhar document: $e';
+      }
+      ValidationHelper.showErrorMessage(context, errorMessage);
     }
   }
 
   Future<void> _selectPanFile() async {
     try {
-      // TODO: Implement actual file picker with file upload
-      // For now, simulate file upload
-      setState(() {
-        _panUploadPath = 'pan_document.pdf';
-      });
-      
-      // Upload to backend
-      await ref.read(profileProvider.notifier).uploadDocument('panUpload', _panUploadPath!);
-      
-      ValidationHelper.showSuccessMessage(context, 'PAN document uploaded successfully');
+      if (kIsWeb) {
+        ValidationHelper.showErrorMessage(context, 'File upload is not supported on web. Please use the mobile app.');
+        return;
+      }
+      FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png']);
+      if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
+        final filePath = result.files.single.path!;
+        final file = File(filePath);
+        if (!await file.exists()) {
+          ValidationHelper.showErrorMessage(context, 'Selected file not found. Please try again.');
+          return;
+        }
+        setState(() {
+          _panFile = file;
+          _panUploadPath = file.path;
+        });
+        // Do NOT upload here, upload on save
+      }
     } catch (e) {
-      ValidationHelper.showErrorMessage(context, 'Failed to upload PAN document: ${e.toString()}');
+      String errorMessage = 'Failed to select PAN document';
+      if (e.toString().contains('_Namespace')) {
+        errorMessage = 'File picker not supported on this platform. Please use a mobile device.';
+      } else if (e.toString().contains('permission')) {
+        errorMessage = 'Permission denied. Please allow file access and try again.';
+      } else if (e.toString().contains('cancel')) {
+        return;
+      } else {
+        errorMessage = 'Failed to select PAN document: $e';
+      }
+      ValidationHelper.showErrorMessage(context, errorMessage);
     }
   }
 

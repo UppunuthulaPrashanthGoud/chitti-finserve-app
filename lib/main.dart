@@ -11,6 +11,8 @@ import 'presentation/applied_loans/applied_loans_screen.dart';
 import 'presentation/profile/profile_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'presentation/config/config_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   // Print debug information
@@ -19,18 +21,109 @@ void main() {
   runApp(const ProviderScope(child: ChittiFinserveApp()));
 }
 
-class ChittiFinserveApp extends StatelessWidget {
+class ChittiFinserveApp extends ConsumerWidget {
   const ChittiFinserveApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: 'Chitti Finserve',
+      title: 'Chitti Finserv',
       theme: appTheme(context, isDark: false),
       darkTheme: appTheme(context, isDark: false),
       themeMode: ThemeMode.light,
-      home: const SplashRouterScreen(),
+      home: ForceUpdateWrapper(child: const SplashRouterScreen()),
       debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+class ForceUpdateWrapper extends ConsumerStatefulWidget {
+  final Widget child;
+  const ForceUpdateWrapper({required this.child, super.key});
+  @override
+  ConsumerState<ForceUpdateWrapper> createState() => _ForceUpdateWrapperState();
+}
+
+class _ForceUpdateWrapperState extends ConsumerState<ForceUpdateWrapper> {
+  bool _showDialog = false;
+  String _updateMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkForceUpdate());
+  }
+
+  Future<void> _checkForceUpdate() async {
+    final configAsync = ref.read(appConfigProvider);
+    configAsync.whenData((config) {
+      final forceUpdate = config.forceUpdate;
+      final isActive = forceUpdate['isActive'] == true;
+      final requiredVersion = forceUpdate['version'] ?? '1.0.0';
+      final message = forceUpdate['message'] ?? 'A new version is available. Please update to continue.';
+      if (isActive && _isVersionLess(AppConfig.appVersion, requiredVersion)) {
+        setState(() {
+          _showDialog = true;
+          _updateMessage = message;
+        });
+      }
+    });
+  }
+
+  bool _isVersionLess(String current, String required) {
+    final c = current.split('.').map(int.parse).toList();
+    final r = required.split('.').map(int.parse).toList();
+    for (int i = 0; i < 3; i++) {
+      if (c[i] < r[i]) return true;
+      if (c[i] > r[i]) return false;
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final configAsync = ref.watch(appConfigProvider);
+    String androidUrl = '';
+    String iosUrl = '';
+    configAsync.whenData((config) {
+      androidUrl = config.forceUpdate['androidUrl'] ?? '';
+      iosUrl = config.forceUpdate['iosUrl'] ?? '';
+    });
+    return Stack(
+      children: [
+        widget.child,
+        if (_showDialog)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.7),
+              child: Center(
+                child: showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: const Text('Update Required'),
+                      content: Text(_updateMessage),
+                      actions: [
+                        ElevatedButton(
+                          onPressed: () async {
+                            final url = Theme.of(context).platform == TargetPlatform.iOS
+                              ? iosUrl
+                              : androidUrl;
+                            if (url.isNotEmpty && await canLaunch(url)) {
+                              await launch(url);
+                            }
+                          },
+                          child: const Text('Update Now'),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

@@ -1,39 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:animated_text_kit/animated_text_kit.dart';
+import '../../core/app_config.dart';
+import '../../data/repository/loan_form_repository.dart';
+import 'package:chitti_finserve_lead_app/presentation/config/config_provider.dart';
 
-class TermsConditionsScreen extends ConsumerStatefulWidget {
+class TermsConditionsScreen extends ConsumerWidget {
   const TermsConditionsScreen({super.key});
 
   @override
-  ConsumerState<TermsConditionsScreen> createState() => _TermsConditionsScreenState();
-}
-
-class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-    _animationController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final configAsync = ref.watch(appConfigProvider);
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -46,176 +22,71 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> w
           ),
         ),
         child: SafeArea(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Column(
-              children: [
-                // Header
-                _buildHeader(),
-                
-                // Content
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: SingleChildScrollView(
+          child: configAsync.when(
+            data: (config) {
+              final contact = config.contactInfo;
+              final companyName = contact?.companyName ?? 'Chitti Finserv';
+              final email = contact?.email ?? 'support@chittifinserv.com';
+              final phone = contact?.phone ?? '+91 9876543210';
+              final address = contact?.address ?? '123 Financial District, Mumbai, Maharashtra, India';
+              final website = contact?.website ?? 'https://chittifinserv.com';
+              final today = DateTime.now();
+              return SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    Container(
+                      margin: const EdgeInsets.all(16),
                       padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildSection(
-                            '1. Acceptance of Terms',
-                            'By downloading, installing, or using the Chitti Finserve Loan Lead Generation App ("App"), you agree to be bound by these Terms and Conditions. If you do not agree to these terms, please do not use the App.',
-                          ),
-                          
-                          _buildSection(
-                            '2. App Description',
-                            'The App is a loan lead generation platform that connects users with financial institutions and lenders. We facilitate the process of loan applications but do not directly provide loans, financial advice, or guarantee loan approvals.',
-                          ),
-                          
-                          _buildSection(
-                            '3. User Eligibility',
-                            'You must be at least 18 years old and legally competent to use this App. You must provide accurate and complete information when using our services. The App is intended for Indian residents only.',
-                          ),
-                          
-                          _buildSection(
-                            '4. User Responsibilities',
-                            '• Provide accurate and truthful information\n• Maintain the security of your account\n• Comply with all applicable laws and regulations\n• Not use the App for illegal purposes\n• Not attempt to gain unauthorized access\n• Not submit false or misleading information\n• Not use the App for money laundering or fraud',
-                          ),
-                          
-                          _buildSection(
-                            '5. Privacy and Data Protection',
-                            'Your privacy is important to us. We collect, use, and protect your personal information as described in our Privacy Policy. By using the App, you consent to our data practices.',
-                          ),
-                          
-                          _buildSection(
-                            '6. Financial Information and KYC',
-                            'The App may collect financial information and KYC documents (Aadhar, PAN) for loan processing. We implement industry-standard security measures to protect your financial data. All data is encrypted and stored securely.',
-                          ),
-                          
-                          _buildSection(
-                            '7. Lead Generation Process',
-                            '• We collect your loan requirements and personal information\n• We share this information with authorized lenders and financial institutions\n• Lenders may contact you directly for loan processing\n• We do not guarantee loan approval or specific terms\n• Loan terms and conditions are determined by the lenders',
-                          ),
-                          
-                          _buildSection(
-                            '8. Third-Party Services',
-                            'The App integrates with third-party services for loan processing, verification, and other services. We are not responsible for the privacy practices, terms, or services of third-party providers.',
-                          ),
-                          
-                          _buildSection(
-                            '9. Intellectual Property',
-                            'All content, features, and functionality of the App are owned by Chitti Finserve and are protected by copyright, trademark, and other intellectual property laws.',
-                          ),
-                          
-                          _buildSection(
-                            '10. Limitation of Liability',
-                            'Chitti Finserve shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the App. Our liability is limited to the amount paid by you for the App.',
-                          ),
-                          
-                          _buildSection(
-                            '11. Disclaimers',
-                            '• The App is provided "as is" without warranties\n• We do not guarantee loan approval or specific loan terms\n• Loan terms are subject to lender discretion and approval\n• Interest rates, fees, and terms vary by lender\n• We are not a financial advisor or lender\n• Past performance does not guarantee future results',
-                          ),
-                          
-                          _buildSection(
-                            '12. Prohibited Activities',
-                            'You agree not to:\n• Submit false or misleading information\n• Use the App for illegal activities\n• Attempt to access other users\' accounts\n• Interfere with the App\'s functionality\n• Use automated systems to access the App\n• Share your account credentials with others',
-                          ),
-                          
-                          _buildSection(
-                            '13. Termination',
-                            'We may terminate or suspend your access to the App at any time, with or without cause, with or without notice. You may also terminate your account at any time.',
-                          ),
-                          
-                          _buildSection(
-                            '14. Governing Law',
-                            'These Terms and Conditions are governed by the laws of India. Any disputes shall be resolved in the courts of India, with Mumbai courts having exclusive jurisdiction.',
-                          ),
-                          
-                          _buildSection(
-                            '15. Changes to Terms',
-                            'We reserve the right to modify these terms at any time. We will notify you of any material changes through the app or email. Continued use of the App after changes constitutes acceptance of the new terms.',
-                          ),
-                          
-                          _buildSection(
-                            '16. Contact Information',
-                            'For questions about these Terms and Conditions, please contact us at:\nEmail: support@chittifinserve.com\nPhone: +91-XXXXXXXXXX\nAddress: [Your Company Address]',
-                          ),
-                          
-                          const SizedBox(height: 32),
-                          
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.blue[50],
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.blue[200]!),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(Icons.info_outline, color: Colors.blue[600]),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Important Notice',
-                                      style: TextStyle(
-                                        color: Colors.blue[700],
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: 'Montserrat',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'This app is for loan lead generation only. We do not provide loans directly. All loan approvals, terms, and conditions are subject to lender discretion. Please read all loan documents carefully before signing.',
-                                  style: TextStyle(
-                                    color: Colors.blue[700],
-                                    fontFamily: 'Montserrat',
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
+                          Text(
+                            'Terms & Conditions',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 22,
+                              color: Color(0xFF005DFF),
+                              fontFamily: 'Montserrat',
                             ),
                           ),
-                          
                           const SizedBox(height: 16),
-                          
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'Last updated: ${DateTime.now().year}',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontFamily: 'Montserrat',
-                                fontSize: 12,
-                              ),
-                            ),
+                          Text(
+                            'This app is provided by $companyName for the sole purpose of collecting user leads interested in financial products.\n\n'
+                            'We do not provide, distribute, or process any loans, credit, or financial products directly through this app.\n\n'
+                            'By submitting your information, you agree to be contacted by our team for further discussion about your interest.\n\n'
+                            'No financial transactions, approvals, or disbursements are performed within this app.\n\n'
+                            'For any queries, contact us at:',
+                            style: TextStyle(fontSize: 15, color: Colors.black87, fontFamily: 'Montserrat'),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildContactInfo(email, phone, address, website),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Last updated: ${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}',
+                            style: TextStyle(color: Colors.grey[700], fontSize: 13),
                           ),
                         ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('Failed to load terms')),
           ),
         ),
       ),
@@ -223,42 +94,18 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> w
   }
 
   Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: Column(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      child: Row(
         children: [
-          Row(
-            children: [
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: AnimatedTextKit(
-                  animatedTexts: [
-                    TypewriterAnimatedText(
-                      'Terms & Conditions',
-                      textStyle: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Montserrat',
-                      ),
-                      speed: const Duration(milliseconds: 100),
-                    ),
-                  ],
-                  totalRepeatCount: 1,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
+          Icon(Icons.info_outline, color: Color(0xFF005DFF), size: 28),
+          const SizedBox(width: 12),
           Text(
-            'Please read these terms carefully',
+            'Terms & Conditions',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
-              fontSize: 14,
+              color: Color(0xFF005DFF),
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
               fontFamily: 'Montserrat',
             ),
           ),
@@ -267,33 +114,15 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> w
     );
   }
 
-  Widget _buildSection(String title, String content) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Color(0xFF005DFF),
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Montserrat',
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            content,
-            style: TextStyle(
-              color: Colors.grey[700],
-              fontSize: 14,
-              fontFamily: 'Montserrat',
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
+  Widget _buildContactInfo(String email, String phone, String address, String website) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Email: $email', style: TextStyle(fontSize: 14, color: Colors.black87)),
+        Text('Phone: $phone', style: TextStyle(fontSize: 14, color: Colors.black87)),
+        Text('Address: $address', style: TextStyle(fontSize: 14, color: Colors.black87)),
+        Text('Website: $website', style: TextStyle(fontSize: 14, color: Colors.black87)),
+      ],
     );
   }
 } 

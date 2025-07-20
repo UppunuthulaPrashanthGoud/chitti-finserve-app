@@ -236,104 +236,106 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
             data: (config) {
               return appConfigAsync.when(
                 data: (appConfig) {
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Display logo from splash configuration
-                      if (appConfig.splash['logo'] != null && appConfig.splash['logo'].toString().isNotEmpty)
-                        Container(
-                          height: 120,
-                          width: 120,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            color: Colors.white,
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              ImageUtils.getImageUrl(appConfig.splash['logo']),
-                              fit: BoxFit.contain,
-                              headers: {
-                                'Accept': 'image/*',
-                                'User-Agent': 'Flutter/1.0',
-                                'Cache-Control': 'no-cache',
-                              },
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Container(
-                                  height: 120,
-                                  width: 120,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    color: Colors.white,
-                                  ),
-                                  child: const Center(
-                                    child: CircularProgressIndicator(
-                                      color: Color(0xFF005DFF),
+                  return SingleChildScrollView(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Display logo from splash configuration
+                        if (appConfig.splash['logo'] != null && appConfig.splash['logo'].toString().isNotEmpty)
+                          Container(
+                            height: 120,
+                            width: 120,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.white,
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                ImageUtils.getImageUrl(appConfig.splash['logo']),
+                                fit: BoxFit.contain,
+                                headers: {
+                                  'Accept': 'image/*',
+                                  'User-Agent': 'Flutter/1.0',
+                                  'Cache-Control': 'no-cache',
+                                },
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    height: 120,
+                                    width: 120,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      color: Colors.white,
                                     ),
-                                  ),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                print('🔧 Login Logo Error:');
-                                print('   URL: ${ImageUtils.getImageUrl(appConfig.splash['logo'])}');
-                                print('   Error: $error');
-                                print('   Stack: $stackTrace');
-                                return Container(
-                                  height: 120,
-                                  width: 120,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    color: Colors.white,
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        Icons.account_balance,
-                                        size: 40,
+                                    child: const Center(
+                                      child: CircularProgressIndicator(
                                         color: Color(0xFF005DFF),
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Logo Error',
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 10,
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  print('🔧 Login Logo Error:');
+                                  print('   URL: ${ImageUtils.getImageUrl(appConfig.splash['logo'])}');
+                                  print('   Error: $error');
+                                  print('   Stack: $stackTrace');
+                                  return Container(
+                                    height: 120,
+                                    width: 120,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      color: Colors.white,
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(
+                                          Icons.account_balance,
+                                          size: 40,
+                                          color: Color(0xFF005DFF),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Logo Error',
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                           ),
-                        ),
-                      const SizedBox(height: 16),
-                      Text(
-                        config.welcomeTitle ?? 'Welcome to Chitti Finserv',
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Montserrat',
-                          color: Colors.white,
-                        ),
-                      ),
-                      if (config.welcomeSubtitle != null && config.welcomeSubtitle!.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Text(
-                            config.welcomeSubtitle!,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.white70,
-                              fontFamily: 'Montserrat',
-                            ),
-                            textAlign: TextAlign.center,
+                        const SizedBox(height: 16),
+                        Text(
+                          config.welcomeTitle ?? 'Welcome to Chitti Finserv',
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Montserrat',
+                            color: Colors.white,
                           ),
                         ),
-                      _buildLoginCard(config),
-                    ],
+                        if (config.welcomeSubtitle != null && config.welcomeSubtitle!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text(
+                              config.welcomeSubtitle!,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.white70,
+                                fontFamily: 'Montserrat',
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        _buildLoginCard(config),
+                      ],
+                    ),
                   );
                 },
                 loading: () => const Center(

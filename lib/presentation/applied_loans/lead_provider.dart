@@ -4,6 +4,7 @@ import '../loan_form/loan_form_provider.dart';
 
 class Application {
   final String id;
+  final String applicationNumber;
   final String loanType;
   final String status;
   final String appliedDate;
@@ -15,6 +16,7 @@ class Application {
 
   Application({
     required this.id,
+    required this.applicationNumber,
     required this.loanType,
     required this.status,
     required this.appliedDate,
@@ -28,6 +30,7 @@ class Application {
   factory Application.fromJson(Map<String, dynamic> json) {
     return Application(
       id: json['_id'] ?? json['id'] ?? '',
+      applicationNumber: json['applicationNumber'] ?? 'N/A',
       loanType: json['loanType'] ?? '',
       status: json['status'] ?? 'pending',
       appliedDate: json['createdAt'] != null 
@@ -44,14 +47,11 @@ class Application {
 
 final leadListProvider = FutureProvider<List<Application>>((ref) async {
   try {
-    print('🔄 LeadListProvider: Fetching user applications...');
     final repository = ref.read(loanFormRepositoryProvider);
     final applications = await repository.getUserApplications();
     
-    print('✅ LeadListProvider: Fetched ${applications.length} applications');
     return applications.map((app) => Application.fromJson(app)).toList();
   } catch (e) {
-    print('❌ LeadListProvider: Error fetching applications: $e');
     // Return empty list if API fails
     return [];
   }

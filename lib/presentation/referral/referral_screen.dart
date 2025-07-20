@@ -201,52 +201,52 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> with TickerProv
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: Column(
-        children: [
-          // Wallet Card
-          _buildWalletCard(referralData.wallet),
-          
-          // Referral Code Section
-          _buildReferralCodeSection(referralData),
-          
-          // Tab Bar
-          Container(
+      children: [
+        // Wallet Card
+        _buildWalletCard(referralData.wallet),
+        
+        // Referral Code Section
+        _buildReferralCodeSection(referralData),
+        
+        // Tab Bar
+        Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: TabBar(
+            controller: _tabController,
+            indicator: BoxDecoration(
+              color: const Color(0xFF005DFF),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: TabBar(
-              controller: _tabController,
-              indicator: BoxDecoration(
-                color: const Color(0xFF005DFF),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.grey.shade600,
-              tabs: const [
-                Tab(text: 'Statistics'),
-                Tab(text: 'Referrals'),
-                Tab(text: 'Transactions'),
-              ],
-            ),
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.grey.shade600,
+            tabs: const [
+              Tab(text: 'Statistics'),
+              Tab(text: 'Referrals'),
+              Tab(text: 'Transactions'),
+            ],
           ),
-          
+        ),
+        
           // Tab Content with fixed height
           Container(
             height: 400, // Fixed height to prevent overflow
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildStatisticsTab(referralData.statistics),
-                _buildReferralsTab(referralData.referrals),
-                _buildTransactionsTab(),
-              ],
-            ),
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildStatisticsTab(referralData.statistics),
+              _buildReferralsTab(referralData.referrals),
+              _buildTransactionsTab(),
+            ],
           ),
+        ),
           
           // Bottom padding
           const SizedBox(height: 20),
-        ],
+      ],
       ),
     );
   }

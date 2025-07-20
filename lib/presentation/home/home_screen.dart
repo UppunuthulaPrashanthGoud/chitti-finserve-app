@@ -370,12 +370,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
   }
 
   Widget _buildBannerImage(String imagePath) {
-    // Use ImageUtils to get the proper URL
     final fullImageUrl = ImageUtils.getImageUrl(imagePath);
-    
-    // Check if it's a network image
-    if (ImageUtils.isNetworkImage(imagePath)) {
-      
+
+    if (imagePath.startsWith('assets/')) {
+      // Asset image
+      return Image.asset(
+        fullImageUrl,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildFallbackImage(),
+      );
+    } else {
+      // Always use network for non-asset images
       return Image.network(
         fullImageUrl,
         width: double.infinity,
@@ -397,15 +404,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
             ),
           );
         },
-      );
-    } else {
-      // Asset image
-      return Image.asset(
-        imagePath,
-        width: double.infinity,
-        height: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildFallbackImage(),
       );
     }
   }
@@ -502,12 +500,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
       iconUrl = ImageUtils.getImageUrl(category.icon);
     }
     
-    // Debug logging
-    if (category.icon != null && category.icon!.isNotEmpty) {
-      print('Category: ${category.name}');
-      print('Icon path: ${category.icon}');
-      print('Final URL: $iconUrl');
-    }
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: InkWell(

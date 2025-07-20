@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'lead_provider.dart';
+import 'application_detail_screen.dart';
 import '../../main.dart';
 
 class AppliedLoansScreen extends ConsumerStatefulWidget {
@@ -84,75 +85,35 @@ class _AppliedLoansScreenState extends ConsumerState<AppliedLoansScreen> with Ti
   }
 
   Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          // Top row with menu button
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+          child: Row(
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  onPressed: () {
-                    // Navigate to main navigation with applications tab selected
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(
-                        builder: (context) => const MainNavScreen(initialIndex: 1),
-                      ),
-                      (route) => false,
-                    );
-                  },
-                  icon: const Icon(Icons.menu, color: Colors.white),
-                  iconSize: 20,
+              Expanded(
+                child: Text(
+                  'My Applications',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Montserrat',
+                  ),
                 ),
               ),
-              const Spacer(),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  onPressed: () {
-                    // Refresh applications
-                    _loadApplications();
-                  },
-                  icon: const Icon(Icons.refresh, color: Colors.white),
-                  iconSize: 20,
-                ),
+              IconButton(
+                onPressed: _loadApplications,
+                icon: const Icon(Icons.refresh, color: Colors.white),
+                tooltip: 'Refresh',
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.2)),
-            ),
-            child: const Icon(
-              Icons.assignment_outlined,
-              size: 48,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'My Applications',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Montserrat',
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
             'Track your loan applications',
             style: TextStyle(
               color: Colors.white.withOpacity(0.8),
@@ -160,8 +121,9 @@ class _AppliedLoansScreenState extends ConsumerState<AppliedLoansScreen> with Ti
               fontFamily: 'Montserrat',
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 
@@ -188,122 +150,182 @@ class _AppliedLoansScreenState extends ConsumerState<AppliedLoansScreen> with Ti
   Widget _buildLeadCard(Application application, int index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      child: Card(
-        elevation: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(application.status).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      _getStatusIcon(application.status),
-                      color: _getStatusColor(application.status),
-                      size: 24,
-                    ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            print('🔧 Debug: Application tapped!');
+            print('🔧 Debug: Application ID: ${application.id}');
+            print('🔧 Debug: Application Type: ${application.loanType}');
+            print('🔧 Debug: Application Status: ${application.status}');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ApplicationDetailScreen(
+                  applicationId: application.id,
+                ),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Card(
+            elevation: 8,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Stack(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: _getStatusColor(application.status).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              _getStatusIcon(application.status),
+                              color: _getStatusColor(application.status),
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  application.loanType,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                    fontFamily: 'Montserrat',
+                                    color: Color(0xFF005DFF),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  application.applicationNumber,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    fontFamily: 'Montserrat',
+                                    color: Color(0xFF005DFF),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '₹${application.loanAmount.toStringAsFixed(0)} • ${application.category}',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
+                                    fontFamily: 'Montserrat',
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Applied on ${application.appliedDate}',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
+                                    fontFamily: 'Montserrat',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      // Progress Steps
+                      _buildProgressSteps(application.status),
+                      // Move approved/rejected message below main info
+                      if (application.status == 'approved' || application.status == 'rejected')
+                        Container(
+                          margin: const EdgeInsets.only(top: 16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _getStatusColor(application.status).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _getStatusColor(application.status).withOpacity(0.3),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                application.status == 'approved' ? Icons.check_circle : Icons.cancel,
+                                color: _getStatusColor(application.status),
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  application.status == 'approved' 
+                                      ? 'Congratulations! Your loan has been approved.'
+                                      : 'Your loan application has been rejected.',
+                                  style: TextStyle(
+                                    color: _getStatusColor(application.status),
+                                    fontSize: 14,
+                                    fontFamily: 'Montserrat',
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+                // Status badge (chip) in top right
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(application.status),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _getStatusColor(application.status).withOpacity(0.2),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          application.loanType,
+                          application.status.toUpperCase(),
                           style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            fontFamily: 'Montserrat',
-                            color: Color(0xFF005DFF),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '₹${application.loanAmount.toStringAsFixed(0)} • ${application.category}',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
                             fontFamily: 'Montserrat',
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Applied on ${application.appliedDate}',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                            fontFamily: 'Montserrat',
-                          ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.white,
+                          size: 14,
                         ),
                       ],
                     ),
                   ),
-                  // Category icon on the right
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF005DFF).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.category,
-                      color: const Color(0xFF005DFF),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _buildStatusChip(application.status),
-                ],
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Progress Steps
-              _buildProgressSteps(application.status),
-              
-              if (application.status == 'approved' || application.status == 'rejected')
-                Container(
-                  margin: const EdgeInsets.only(top: 16),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(application.status).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: _getStatusColor(application.status).withOpacity(0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        application.status == 'approved' ? Icons.check_circle : Icons.cancel,
-                        color: _getStatusColor(application.status),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          application.status == 'approved' 
-                              ? 'Congratulations! Your loan has been approved.'
-                              : 'Your loan application has been rejected.',
-                          style: TextStyle(
-                            color: _getStatusColor(application.status),
-                            fontSize: 14,
-                            fontFamily: 'Montserrat',
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

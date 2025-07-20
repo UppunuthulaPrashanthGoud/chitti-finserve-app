@@ -55,4 +55,7 @@ class AppConfig {
   // Development vs Production
   static bool get isDevelopment => Environment == 'dev'; // Based on environment
   static bool get isProduction => !isDevelopment;
+
+  // Document upload debug logging (can be enabled independently)
+  static const bool enableUploadDebugLogging = false;
 } 

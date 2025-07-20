@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/network_service.dart';
 import '../model/profile_model.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
 
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) => ProfileRepository());
 
@@ -12,7 +14,7 @@ class ProfileRepository {
   Future<ProfileModel?> getProfile() async {
     try {
       // First try to get from backend
-      final token = await _getAuthToken();
+      final token = await getAuthToken();
       if (token != null) {
         try {
           final response = await NetworkService.get('/auth/me', token: token);
@@ -46,7 +48,7 @@ class ProfileRepository {
 
   Future<void> updateProfile(ProfileModel profile) async {
     try {
-      final token = await _getAuthToken();
+      final token = await getAuthToken();
       if (token == null) {
         throw Exception('No authentication token found');
       }
@@ -93,7 +95,7 @@ class ProfileRepository {
 
   Future<void> uploadDocument(String documentType, String documentUrl) async {
     try {
-      final token = await _getAuthToken();
+      final token = await getAuthToken();
       if (token == null) {
         throw Exception('No authentication token found');
       }
@@ -111,6 +113,39 @@ class ProfileRepository {
     }
   }
 
+  /// Uploads Aadhar and/or PAN file to backend and returns uploaded file paths
+  Future<Map<String, String>> uploadUserDocuments({File? aadharFile, File? panFile}) async {
+    final token = await getAuthToken();
+    if (token == null) {
+      throw Exception('No authentication token found');
+    }
+    final uri = Uri.parse('${NetworkService.baseUrl}/upload/application-documents');
+    final request = http.MultipartRequest('POST', uri);
+    request.headers['Authorization'] = 'Bearer $token';
+    if (aadharFile != null) {
+      request.files.add(await http.MultipartFile.fromPath('aadharCard', aadharFile.path));
+    }
+    if (panFile != null) {
+      request.files.add(await http.MultipartFile.fromPath('panCard', panFile.path));
+    }
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to upload documents: ${response.body}');
+    }
+    final data = NetworkService.parseResponse(response);
+    final result = <String, String>{};
+    if (data['data'] != null) {
+      if (data['data']['aadharCard'] != null) {
+        result['aadharCard'] = data['data']['aadharCard']['path'];
+      }
+      if (data['data']['panCard'] != null) {
+        result['panCard'] = data['data']['panCard']['path'];
+      }
+    }
+    return result;
+  }
+
   Future<void> clearProfile() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -120,7 +155,7 @@ class ProfileRepository {
     }
   }
 
-  Future<String?> _getAuthToken() async {
+  Future<String?> getAuthToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('auth_token');
   }

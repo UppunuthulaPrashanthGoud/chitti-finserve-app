@@ -74,13 +74,6 @@ class NetworkService {
 
     if (token != null) {
       defaultHeaders['Authorization'] = 'Bearer $token';
-      if (AppConfig.enableLogging) {
-        print('🔐 NetworkService: Adding Authorization header with token');
-      }
-    } else {
-      if (AppConfig.enableLogging) {
-        print('⚠️ NetworkService: No token provided for request');
-      }
     }
 
     if (headers != null) {
@@ -97,15 +90,7 @@ class NetworkService {
     
     while (retryCount < maxRetries) {
       try {
-        if (AppConfig.enableLogging) {
-          print('🌐 NetworkService: Making request (attempt ${retryCount + 1})');
-        }
-        
         final response = await request().timeout(timeout);
-        
-        if (AppConfig.enableLogging) {
-          print('✅ NetworkService: Response received - Status: ${response.statusCode}');
-        }
         
         // If successful, return the response
         if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -114,18 +99,12 @@ class NetworkService {
         
         // If it's a client error (4xx), don't retry
         if (response.statusCode >= 400 && response.statusCode < 500) {
-          if (AppConfig.enableLogging) {
-            print('❌ NetworkService: Client error - Status: ${response.statusCode}');
-          }
           return response;
         }
         
         // If it's a server error (5xx), retry
         if (response.statusCode >= 500) {
           retryCount++;
-          if (AppConfig.enableLogging) {
-            print('🔄 NetworkService: Server error, retrying... ($retryCount/$maxRetries)');
-          }
           if (retryCount < maxRetries) {
             await Future.delayed(Duration(seconds: retryCount * 2));
             continue;
@@ -135,11 +114,6 @@ class NetworkService {
         return response;
       } catch (e) {
         retryCount++;
-        
-        if (AppConfig.enableLogging) {
-          print('❌ NetworkService: Error occurred - $e');
-          print('🔄 NetworkService: Retrying... ($retryCount/$maxRetries)');
-        }
         
         // If it's a network error, retry
         if (e.toString().contains('SocketException') || e.toString().contains('HttpException')) {
@@ -166,10 +140,18 @@ class NetworkService {
   }
 
   static Map<String, dynamic> parseResponse(http.Response response) {
+    print('🔧 Debug: parseResponse called with status: ${response.statusCode}');
+    print('🔧 Debug: Response body: ${response.body}');
+    
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      return json.decode(response.body);
+      print('🔧 Debug: Parsing successful response');
+      final parsedData = json.decode(response.body);
+      print('🔧 Debug: Parsed data: $parsedData');
+      return parsedData;
     } else {
+      print('🔧 Debug: Parsing error response');
       final errorBody = json.decode(response.body);
+      print('🔧 Debug: Error body: $errorBody');
       
       // Handle validation errors specifically
       if (response.statusCode == 400 && errorBody['errors'] != null) {

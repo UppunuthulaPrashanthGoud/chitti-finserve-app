@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/model/profile_model.dart';
 import '../../data/repository/profile_repository.dart';
+import 'dart:io';
 
 final profileProvider = StateNotifierProvider<ProfileNotifier, AsyncValue<ProfileModel?>>((ref) {
   final repo = ref.read(profileRepositoryProvider);
@@ -81,5 +82,10 @@ class ProfileNotifier extends StateNotifier<AsyncValue<ProfileModel?>> {
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
     }
+  }
+
+  /// Uploads user documents and returns uploaded file paths
+  Future<Map<String, String>> uploadUserDocument({File? aadharFile, File? panFile}) async {
+    return await _repository.uploadUserDocuments(aadharFile: aadharFile, panFile: panFile);
   }
 } 

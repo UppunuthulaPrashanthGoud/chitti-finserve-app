@@ -10,22 +10,35 @@ class BannerRepository {
       final response = await NetworkService.get('/banners/active');
       final jsonMap = NetworkService.parseResponse(response);
       
+      // Debug logging to see the raw response
+      print('🔧 BannerRepository Debug - Raw API Response:');
+      print('   Response: $jsonMap');
+      
       // Filter only active banners
       final activeBanners = (jsonMap['data'] as List)
           .where((banner) => banner['isActive'] == true)
           .toList();
+      
+      // Debug logging for each banner's image path
+      for (var banner in activeBanners) {
+        print('🔧 Banner: ${banner['title']}');
+        print('   Image path: ${banner['image']}');
+        print('   Image path type: ${banner['image'].runtimeType}');
+      }
       
       return BannerListModel.fromJson({
         'data': activeBanners,
         'pagination': jsonMap['pagination'],
       });
     } catch (e) {
+      print('❌ BannerRepository Error: $e');
       // Fallback to local JSON if API fails
       try {
         final String response = await rootBundle.loadString('assets/json/banners.json');
         final data = await json.decode(response);
         return BannerListModel.fromJson(data);
-      } catch (localError) {
+      } catch (fallbackError) {
+        print('❌ BannerRepository Fallback Error: $fallbackError');
         // Final fallback to hardcoded banners
         return BannerListModel(data: [
           BannerModel(

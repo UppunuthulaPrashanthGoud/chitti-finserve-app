@@ -3,11 +3,22 @@ import '../../core/network_service.dart';
 import '../../core/app_config.dart';
 import '../model/loan_form_model.dart';
 import '../model/category_model.dart';
+import '../model/bank_model.dart';
+import '../model/state_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+
+// Import ApiException from network_service
+import '../../core/network_service.dart' show ApiException;
 
 class LoanFormRepository {
   // Dynamic category mapping - will be populated from API
   final Map<String, String> _categoryMapping = {};
+  
+  // Cache for banks and states
+  List<BankModel>? _cachedBanks;
+  List<StateModel>? _cachedStates;
 
   Future<List<CategoryModel>> fetchCategories() async {
     try {
@@ -20,43 +31,72 @@ class LoanFormRepository {
     }
   }
 
+  Future<List<BankModel>> fetchBanks() async {
+    try {
+      if (_cachedBanks != null) {
+        return _cachedBanks!;
+      }
+      final response = await NetworkService.get('/banks');
+      final jsonMap = NetworkService.parseResponse(response);
+      List<dynamic> banksData;
+      if (jsonMap['data'] != null) {
+        banksData = jsonMap['data'] as List<dynamic>;
+      } else if (jsonMap is List) {
+        banksData = jsonMap as List<dynamic>;
+      } else {
+        throw Exception('Invalid response format for banks');
+      }
+      _cachedBanks = banksData.map((e) => BankModel.fromJson(e)).toList();
+      return _cachedBanks!;
+    } catch (e) {
+      throw Exception('Failed to load banks: $e');
+    }
+  }
+
+  Future<List<StateModel>> fetchStates() async {
+    try {
+      if (_cachedStates != null) {
+        return _cachedStates!;
+      }
+      final response = await NetworkService.get('/states');
+      final jsonMap = NetworkService.parseResponse(response);
+      List<dynamic> statesData;
+      if (jsonMap['data'] != null) {
+        statesData = jsonMap['data'] as List<dynamic>;
+      } else if (jsonMap is List) {
+        statesData = jsonMap as List<dynamic>;
+      } else {
+        throw Exception('Invalid response format for states');
+      }
+      _cachedStates = statesData.map((e) => StateModel.fromJson(e)).toList();
+      return _cachedStates!;
+    } catch (e) {
+      throw Exception('Failed to load states: $e');
+    }
+  }
+
   Future<LoanFormModel> fetchLoanFormConfig() async {
     try {
-      if (AppConfig.enableLogging) {
-        print('🔧 LoanFormRepository Debug: Fetching loan form configuration...');
-      }
       final response = await NetworkService.get('/configuration/public');
       final data = NetworkService.parseResponse(response);
       
-      if (AppConfig.enableLogging) {
-        print('🔧 LoanFormRepository Debug: Full response structure:');
-        print('Available keys: ${data.keys.toList()}');
-      }
-      
       // Check if loanForm exists in the response
       if (data['data'] != null && data['data']['loanForm'] != null) {
-        if (AppConfig.enableLogging) {
-          print('✅ LoanFormRepository Debug: Found loanForm in data.loanForm');
-        }
         final loanFormConfig = LoanFormModel.fromJson(data['data']['loanForm']);
         
-        // Fetch categories and update the form configuration
+        // Fetch categories, banks, and states and update the form configuration
         try {
           final categories = await fetchCategories();
-          if (AppConfig.enableLogging) {
-            print('🔧 LoanFormRepository Debug: Fetched ${categories.length} categories');
-          }
+          final banks = await fetchBanks();
+          final states = await fetchStates();
           
           // Populate category mapping
           _categoryMapping.clear();
           for (final category in categories) {
             _categoryMapping[category.name] = category.id;
           }
-          if (AppConfig.enableLogging) {
-            print('🔧 LoanFormRepository Debug: Updated category mapping: $_categoryMapping');
-          }
           
-          // Update the category field options with dynamic categories
+          // Update the form fields with dynamic options
           final updatedFields = loanFormConfig.fields?.map((field) {
             if (field.id == 'category' && field.type == 'dropdown') {
               // Create new field with dynamic category options
@@ -68,9 +108,59 @@ class LoanFormRepository {
                 autofill: field.autofill,
                 options: categories.map((cat) => cat.name).toList(),
               );
+            } else if (field.id == 'preferredBank') {
+              // Always convert preferredBank to dropdown with bank options
+              final bankOptions = banks.map((bank) => bank.name ?? '').where((name) => name.isNotEmpty).toList();
+              return LoanFormField(
+                id: field.id,
+                label: field.label ?? 'Preferred Bank',
+                type: 'dropdown',
+                required: field.required ?? true,
+                autofill: field.autofill,
+                options: bankOptions,
+              );
+            } else if (field.id == 'state') {
+              // Always convert state to dropdown with state options
+              final stateOptions = states.map((state) => state.name ?? '').where((name) => name.isNotEmpty).toList();
+              return LoanFormField(
+                id: field.id,
+                label: field.label ?? 'State',
+                type: 'dropdown',
+                required: field.required ?? true,
+                autofill: field.autofill,
+                options: stateOptions,
+              );
             }
             return field;
           }).toList();
+          
+          // Add preferredBank field if it doesn't exist
+          bool hasPreferredBank = updatedFields?.any((field) => field.id == 'preferredBank') ?? false;
+          if (!hasPreferredBank) {
+            final bankOptions = banks.map((bank) => bank.name ?? '').where((name) => name.isNotEmpty).toList();
+            updatedFields?.add(LoanFormField(
+              id: 'preferredBank',
+              label: 'Preferred Bank',
+              type: 'dropdown',
+              required: true,
+              autofill: false,
+              options: bankOptions,
+            ));
+          }
+          
+          // Add state field if it doesn't exist
+          bool hasState = updatedFields?.any((field) => field.id == 'state') ?? false;
+          if (!hasState) {
+            final stateOptions = states.map((state) => state.name ?? '').where((name) => name.isNotEmpty).toList();
+            updatedFields?.add(LoanFormField(
+              id: 'state',
+              label: 'State',
+              type: 'dropdown',
+              required: true,
+              autofill: false,
+              options: stateOptions,
+            ));
+          }
           
           // Create updated loan form model
           return LoanFormModel(
@@ -88,27 +178,14 @@ class LoanFormRepository {
             isActive: loanFormConfig.isActive,
           );
         } catch (e) {
-          if (AppConfig.enableLogging) {
-            print('⚠️ LoanFormRepository Debug: Failed to fetch categories, using static options: $e');
-          }
           return loanFormConfig;
         }
       } else if (data['loanForm'] != null) {
-        if (AppConfig.enableLogging) {
-          print('✅ LoanFormRepository Debug: Found loanForm in response');
-        }
         return LoanFormModel.fromJson(data['loanForm']);
       } else {
-        if (AppConfig.enableLogging) {
-          print('❌ LoanFormRepository Debug: loanForm not found in response');
-          print('Response structure: ${JsonEncoder.withIndent('  ').convert(data)}');
-        }
         throw Exception('Loan form configuration not found');
       }
     } catch (e) {
-      if (AppConfig.enableLogging) {
-        print('❌ LoanFormRepository Debug: Error fetching config: $e');
-      }
       throw Exception('Failed to fetch loan form configuration: $e');
     }
   }
@@ -129,15 +206,7 @@ class LoanFormRepository {
 
   Future<Map<String, dynamic>> submitLoanApplication(Map<String, dynamic> formData) async {
     try {
-      if (AppConfig.enableLogging) {
-        print('🔧 LoanFormRepository Debug: Submitting loan application');
-        print('Form data: ${JsonEncoder.withIndent('  ').convert(formData)}');
-      }
-      
       final token = await _getAuthToken();
-      if (AppConfig.enableLogging) {
-        print('🔧 LoanFormRepository Debug: Auth token: ${token != null ? 'Found' : 'Not found'}');
-      }
       if (token == null) {
         throw Exception('No authentication token found');
       }
@@ -148,13 +217,7 @@ class LoanFormRepository {
         final categoryId = _categoryMapping[categoryName];
         if (categoryId != null) {
           formData['category'] = categoryId;
-          if (AppConfig.enableLogging) {
-            print('🔧 LoanFormRepository Debug: Mapped category "$categoryName" to ID "$categoryId"');
-          }
         } else {
-          if (AppConfig.enableLogging) {
-            print('⚠️ LoanFormRepository Debug: Category "$categoryName" not found in mapping, using first available category');
-          }
           // Use first available category ID if mapping not found
           if (_categoryMapping.isNotEmpty) {
             formData['category'] = _categoryMapping.values.first;
@@ -165,31 +228,16 @@ class LoanFormRepository {
         }
       }
 
-      if (AppConfig.enableLogging) {
-        print('🔧 LoanFormRepository Debug: Making API call to /loan-applications');
-      }
       final response = await NetworkService.post(
         '/loan-applications',
         body: formData,
         token: token,
       );
       
-      if (AppConfig.enableLogging) {
-        print('🔧 LoanFormRepository Debug: Response status: ${response.statusCode}');
-        print('🔧 LoanFormRepository Debug: Response body: ${response.body}');
-      }
-      
       final responseData = NetworkService.parseResponse(response);
-      if (AppConfig.enableLogging) {
-        print('🔧 LoanFormRepository Debug: Parsed response:');
-        print('${JsonEncoder.withIndent('  ').convert(responseData)}');
-      }
       
       return responseData;
     } catch (e) {
-      if (AppConfig.enableLogging) {
-        print('❌ LoanFormRepository Debug: Error submitting application: $e');
-      }
       
       // If it's an ApiException with validation errors, extract the messages
       if (e is ApiException && e.data != null && e.data!['errors'] != null) {
@@ -217,6 +265,61 @@ class LoanFormRepository {
     }
   }
 
+  /// Uploads Aadhar and/or PAN file to backend and returns uploaded file paths
+  Future<Map<String, String>> uploadApplicationDocuments({File? aadharFile, File? panFile}) async {
+    final token = await _getAuthToken();
+    if (token == null) {
+      throw Exception('No authentication token found');
+    }
+    
+    final uri = Uri.parse('${NetworkService.baseUrl}/upload/application-documents');
+    
+    final request = http.MultipartRequest('POST', uri);
+    request.headers['Authorization'] = 'Bearer $token';
+    
+    if (aadharFile != null) {
+      try {
+        final multipartFile = await http.MultipartFile.fromPath('aadharCard', aadharFile.path);
+        request.files.add(multipartFile);
+      } catch (e) {
+        throw Exception('Failed to attach Aadhar file: $e');
+      }
+    }
+    if (panFile != null) {
+      try {
+        final multipartFile = await http.MultipartFile.fromPath('panCard', panFile.path);
+        request.files.add(multipartFile);
+      } catch (e) {
+        throw Exception('Failed to attach PAN file: $e');
+      }
+    }
+    
+    try {
+      final streamedResponse = await request.send();
+      
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      if (response.statusCode != 200) {
+        throw Exception('Failed to upload documents: ${response.body}');
+      }
+      
+      final data = NetworkService.parseResponse(response);
+      
+      final result = <String, String>{};
+      if (data['data'] != null) {
+        if (data['data']['aadharCard'] != null) {
+          result['aadharCard'] = data['data']['aadharCard']['path'];
+        }
+        if (data['data']['panCard'] != null) {
+          result['panCard'] = data['data']['panCard']['path'];
+        }
+      }
+      return result;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getUserApplications() async {
     try {
       final token = await _getAuthToken();
@@ -239,10 +342,20 @@ class LoanFormRepository {
         throw Exception('No authentication token found');
       }
 
-      final response = await NetworkService.get('/loan-applications/$applicationId', token: token);
+      final response = await NetworkService.get('/loan-applications/user/application/$applicationId', token: token);
       return NetworkService.parseResponse(response);
     } catch (e) {
-      throw Exception('Failed to get application: $e');
+      String errorMessage = 'Failed to fetch application details';
+      if (e.toString().contains('404')) {
+        errorMessage = 'Application not found';
+      } else if (e.toString().contains('403')) {
+        errorMessage = 'Access denied. This application does not belong to you.';
+      } else if (e.toString().contains('401')) {
+        errorMessage = 'Authentication failed. Please login again.';
+      } else if (e.toString().contains('500')) {
+        errorMessage = 'Server error. Please try again later.';
+      }
+      throw Exception(errorMessage);
     }
   }
 

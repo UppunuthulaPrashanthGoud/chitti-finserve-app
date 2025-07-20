@@ -10,16 +10,12 @@ class CategoryRepository {
       final jsonMap = NetworkService.parseResponse(response);
       final categories = jsonMap['data'] as List<dynamic>;
       
-      print('API Response - Categories count: ${categories.length}');
       if (categories.isNotEmpty) {
-        print('Using API categories');
         return categories.map((e) => CategoryModel.fromJson(e)).toList();
       }
       
-      print('API returned empty, using local fallback');
       return await _loadLocalCategories();
     } catch (e) {
-      print('API failed, using local fallback: $e');
       return await _loadLocalCategories();
     }
   }
