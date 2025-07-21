@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/app_config.dart';
 import '../../data/repository/loan_form_repository.dart';
 import 'package:chitti_finserve_lead_app/presentation/config/config_provider.dart';
+import 'package:flutter_html/flutter_html.dart';
 
 class TermsConditionsScreen extends ConsumerWidget {
   const TermsConditionsScreen({super.key});
@@ -24,13 +25,15 @@ class TermsConditionsScreen extends ConsumerWidget {
         child: SafeArea(
           child: configAsync.when(
             data: (config) {
-              final contact = config.contactInfo;
-              final companyName = contact?.companyName ?? 'Chitti Finserv';
-              final email = contact?.email ?? 'support@chittifinserv.com';
-              final phone = contact?.phone ?? '+91 9876543210';
-              final address = contact?.address ?? '123 Financial District, Mumbai, Maharashtra, India';
-              final website = contact?.website ?? 'https://chittifinserv.com';
+              final contact = config.contact;
+              final companyName = contact['companyName'] ?? 'Chitti Finserv';
+              final email = contact['email'] ?? 'support@chittifinserv.com';
+              final phone = contact['phone'] ?? '+91 9876543210';
+              final address = contact['address'] ?? '123 Financial District, Mumbai, Maharashtra, India';
+              final website = contact['website'] ?? 'https://chittifinserv.com';
               final today = DateTime.now();
+              final legal = config.legal;
+              final termsContent = (legal['termsConditions'] as String?)?.trim();
               return SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,14 +66,9 @@ class TermsConditionsScreen extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          Text(
-                            'This app is provided by $companyName for the sole purpose of collecting user leads interested in financial products.\n\n'
-                            'We do not provide, distribute, or process any loans, credit, or financial products directly through this app.\n\n'
-                            'By submitting your information, you agree to be contacted by our team for further discussion about your interest.\n\n'
-                            'No financial transactions, approvals, or disbursements are performed within this app.\n\n'
-                            'For any queries, contact us at:',
-                            style: TextStyle(fontSize: 15, color: Colors.black87, fontFamily: 'Montserrat'),
-                          ),
+                          termsContent?.isNotEmpty == true
+                            ? Html(data: termsContent)
+                            : Text('No terms and conditions available.'),
                           const SizedBox(height: 16),
                           _buildContactInfo(email, phone, address, website),
                           const SizedBox(height: 16),

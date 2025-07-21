@@ -29,7 +29,12 @@ class AppConfig {
     contact: json['contact'] ?? {},
     leadStatuses: List<Map<String, dynamic>>.from(json['leadStatuses'] ?? []),
     notifications: json['notifications'] ?? {},
-    legal: json['legal'] ?? {},
+    legal: {
+      'termsConditions': json['termsAndConditions'] ?? '',
+      'privacyPolicy': json['privacyPolicy'] ?? '',
+      'dataSafety': json['dataSafety'] ?? '',
+      'disclaimer': json['disclaimer'] ?? '',
+    },
     forceUpdate: json['forceUpdate'] ?? {},
   );
 }

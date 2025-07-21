@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/app_config.dart';
 import '../../data/repository/loan_form_repository.dart';
 import 'package:chitti_finserve_lead_app/presentation/config/config_provider.dart';
+import 'package:flutter_html/flutter_html.dart';
 
 class PrivacyPolicyScreen extends ConsumerWidget {
   const PrivacyPolicyScreen({super.key});
@@ -24,13 +25,15 @@ class PrivacyPolicyScreen extends ConsumerWidget {
         child: SafeArea(
           child: configAsync.when(
             data: (config) {
-              final contact = config.contactInfo;
-              final companyName = contact?.companyName ?? 'Chitti Finserv';
-              final email = contact?.email ?? 'support@chittifinserv.com';
-              final phone = contact?.phone ?? '+91 9876543210';
-              final address = contact?.address ?? '123 Financial District, Mumbai, Maharashtra, India';
-              final website = contact?.website ?? 'https://chittifinserv.com';
+              final contact = config.contact;
+              final companyName = contact['companyName'] ?? 'Chitti Finserv';
+              final email = contact['email'] ?? 'support@chittifinserv.com';
+              final phone = contact['phone'] ?? '+91 9876543210';
+              final address = contact['address'] ?? '123 Financial District, Mumbai, Maharashtra, India';
+              final website = contact['website'] ?? 'https://chittifinserv.com';
               final today = DateTime.now();
+              final legal = config.legal;
+              final privacyContent = (legal['privacyPolicy'] as String?)?.trim();
               return SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,20 +66,9 @@ class PrivacyPolicyScreen extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          Text(
-                            'This app is provided by $companyName for the sole purpose of collecting user leads interested in financial products.\n\n'
-                            'We do not provide, distribute, or process any loans, credit, or financial products directly through this app.\n\n'
-                            'Information We Collect:\n'
-                            '- Name, phone, email, and other contact details you provide in the application form.\n'
-                            '- We do NOT collect or store any sensitive financial data.\n\n'
-                            'How We Use Your Information:\n'
-                            '- To contact you regarding your interest in financial products.\n'
-                            '- To connect you with our team for further discussion.\n'
-                            '- Your information will not be shared with third parties except as required to process your inquiry.\n\n'
-                            'No financial transactions, approvals, or disbursements are performed within this app.\n\n'
-                            'For any privacy concerns, contact us at:',
-                            style: TextStyle(fontSize: 15, color: Colors.black87, fontFamily: 'Montserrat'),
-                          ),
+                          privacyContent?.isNotEmpty == true
+                            ? Html(data: privacyContent)
+                            : Text('No privacy policy available.'),
                           const SizedBox(height: 16),
                           _buildContactInfo(email, phone, address, website),
                           const SizedBox(height: 16),

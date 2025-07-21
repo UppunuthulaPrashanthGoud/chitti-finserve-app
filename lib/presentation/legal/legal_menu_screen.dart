@@ -5,6 +5,7 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'terms_conditions_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'data_safety_screen.dart';
+import 'disclaimer_screen.dart';
 
 class LegalMenuScreen extends ConsumerStatefulWidget {
   const LegalMenuScreen({super.key});
@@ -143,6 +144,19 @@ class _LegalMenuScreenState extends ConsumerState<LegalMenuScreen> with TickerPr
                                         context,
                                         MaterialPageRoute(
                                           builder: (context) => const DataSafetyScreen(),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildLegalCard(
+                                      icon: Icons.warning,
+                                      title: 'Disclaimer',
+                                      subtitle: 'Important legal disclaimer',
+                                      color: const Color(0xFFB71C1C),
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const DisclaimerScreen(),
                                         ),
                                       ),
                                     ),

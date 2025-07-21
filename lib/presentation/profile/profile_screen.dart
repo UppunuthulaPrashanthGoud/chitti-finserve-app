@@ -165,6 +165,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
   Widget build(BuildContext context) {
     final profileAsync = ref.watch(profileProvider);
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF005DFF),
+        elevation: 0,
+        title: const Text('Profile', style: TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.bold)),
+        actions: [
+          if (!_isEditing)
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.white),
+              tooltip: 'Edit Profile',
+              onPressed: () {
+                setState(() {
+                  _isEditing = true;
+                });
+              },
+            ),
+        ],
+      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -178,15 +195,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
         child: SafeArea(
           child: FadeTransition(
             opacity: _fadeAnimation,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                children: [
-                  _buildHeader(),
-                  const SizedBox(height: 32),
-                  _buildProfileForm(profileAsync),
-                ],
+            child: profileAsync.when(
+              data: (profile) => SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 32),
+                    _buildProfileForm(profileAsync),
+                  ],
+                ),
               ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Failed to load profile')),
             ),
           ),
         ),
@@ -868,7 +889,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with TickerProvid
   }
 
   Future<void> _openDeleteAccountPage() async {
-    const url = 'http://chittifinserv.com/delete-account';
+    const url = 'https://chittifinserv.com/delete-account';
     
     try {
       final uri = Uri.parse(url);

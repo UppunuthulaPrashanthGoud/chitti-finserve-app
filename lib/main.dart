@@ -89,40 +89,39 @@ class _ForceUpdateWrapperState extends ConsumerState<ForceUpdateWrapper> {
       androidUrl = config.forceUpdate['androidUrl'] ?? '';
       iosUrl = config.forceUpdate['iosUrl'] ?? '';
     });
+    if (_showDialog) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (ModalRoute.of(context)?.isCurrent ?? true) {
+          setState(() => _showDialog = false); // Prevent multiple dialogs
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('Update Required'),
+                content: Text(_updateMessage),
+                actions: [
+                  ElevatedButton(
+                    onPressed: () async {
+                      final url = Theme.of(context).platform == TargetPlatform.iOS
+                        ? iosUrl
+                        : androidUrl;
+                      if (url.isNotEmpty && await canLaunch(url)) {
+                        await launch(url);
+                      }
+                    },
+                    child: const Text('Update Now'),
+                  ),
+                ],
+              );
+            },
+          );
+        }
+      });
+    }
     return Stack(
       children: [
         widget.child,
-        if (_showDialog)
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withOpacity(0.7),
-              child: Center(
-                child: showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      title: const Text('Update Required'),
-                      content: Text(_updateMessage),
-                      actions: [
-                        ElevatedButton(
-                          onPressed: () async {
-                            final url = Theme.of(context).platform == TargetPlatform.iOS
-                              ? iosUrl
-                              : androidUrl;
-                            if (url.isNotEmpty && await canLaunch(url)) {
-                              await launch(url);
-                            }
-                          },
-                          child: const Text('Update Now'),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ),
-          ),
       ],
     );
   }
