@@ -244,7 +244,7 @@ class _ProfileCompletionScreenState extends ConsumerState<ProfileCompletionScree
                         TextFormField(
                           controller: _emailController,
                           decoration: InputDecoration(
-                            labelText: 'Email Address (Optional)',
+                            labelText: 'Email Address *',
                             prefixIcon: const Icon(Icons.email, color: Color(0xFF005DFF)),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             filled: true,
@@ -294,29 +294,7 @@ class _ProfileCompletionScreenState extends ConsumerState<ProfileCompletionScree
                 
                 const SizedBox(height: 24),
                 
-                // Skip for now option
-                TextButton(
-                  onPressed: _isLoading ? null : () {
-                    // Navigate to home screen without completing profile
-                    Navigator.of(context).pushReplacement(
-                      PageRouteBuilder(
-                        pageBuilder: (context, animation, secondaryAnimation) => const MainNavScreen(),
-                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                          return FadeTransition(opacity: animation, child: child);
-                        },
-                        transitionDuration: const Duration(milliseconds: 800),
-                      ),
-                    );
-                  },
-                  child: Text(
-                    'Skip for now',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
-                      fontFamily: 'Montserrat',
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
+                // Remove the 'Skip for now' TextButton
               ],
             ),
           ),
