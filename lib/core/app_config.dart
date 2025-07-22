@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 class AppConfig {
   // API Configuration
   // Environment
-  static String Environment = 'dev';
+  static String Environment = 'prod';
   // dev local base url
   static String Local_URL = 'http://localhost:5000/api';
   // dev assets url
