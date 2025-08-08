@@ -45,5 +45,57 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- Privacy Permissions for Camera and Photo Library -->
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs access to camera to capture documents and photos for loan applications.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to photo library to select documents and images for loan applications.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>This app needs access to save downloaded documents and images to your photo library.</string>
+	
+	<!-- Network Security Configuration -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>api.chittifinserv.com</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.2</string>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+			<key>chittifinserv.com</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.2</string>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+	
+	<!-- App Store Required Keys -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	
+	<!-- iOS 14+ Required Keys -->
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This app does not track users across apps or websites.</string>
+	
+	<!-- App Store Connect Required -->
+	<key>CFBundleAllowMixedLocalizations</key>
+	<true/>
 </dict>
 </plist>
