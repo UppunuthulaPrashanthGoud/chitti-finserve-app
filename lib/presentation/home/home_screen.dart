@@ -126,7 +126,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                 AnimatedTextKit(
                   animatedTexts: [
                     TypewriterAnimatedText(
-                      'Chitti Finserve',
+                      'Chitti Finserv',
                       textStyle: const TextStyle(
                         color: Colors.white,
                         fontSize: 28,

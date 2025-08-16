@@ -1,10 +1,10 @@
 name: chitti_finserve_lead_app
 
 description: >-
-  Chitti Finserve Loan Lead Generation App with dynamic content, clean architecture, and Riverpod state management.
+  Chitti Finserv Loan Lead Generation App with dynamic content, clean architecture, and Riverpod state management.
 
 publish_to: 'none'
-version: 1.0.1+2
+version: 1.0.1+5
 
 environment:
   sdk: ">=3.3.0 <4.0.0"

@@ -974,7 +974,7 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> with TickerProv
 
       await Share.share(
         shareData.shareMessage,
-        subject: 'Join Chitti Finserve',
+        subject: 'Join Chitti Finserv',
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
